@@ -6,6 +6,7 @@
 <title>帖子 · 茶馆</title>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
 <link rel="stylesheet" href="../assets/teahouse.css" />
+<script src="/assets/teahouse.js" defer></script>
 <style>
   .tea-article { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 30px 32px; box-shadow: var(--shadow); }
   .tea-article h1 { margin: 0 0 14px; font-size: clamp(1.5rem, 3.6vw, 2.05rem); line-height: 1.35; }
@@ -40,6 +41,7 @@
       <a href="../">主页</a>
       <a href="../posts/">帖子中心</a>
       <a href="../new/">写帖子</a>
+      <span class="tea-auth-slot" data-tea-auth></span>
       <a href="#" id="themeBtn" title="切换明暗">🌙</a>
     </nav>
   </div>
@@ -103,10 +105,63 @@
       '</article>' +
       '<h2 class="tea-sec-title" id="comments">评论</h2>' +
       '<div>' + (cHtml || '<div class="tea-empty" style="padding:28px">还没有评论，来说两句？</div>') + '</div>' +
-      '<div class="tea-gate">登录后可评论与点赞（账户体系将在对接小蓝页 SSO 后开放）</div>';
+      '<div class="tea-composer" id="composer" data-tea-only hidden>' +
+        '<textarea id="cText" maxlength="1000" placeholder="说两句…（将使用你的小蓝页身份）"></textarea>' +
+        '<div class="tea-form-foot" style="margin-top:10px">' +
+          '<button class="btn btn-tea btn-sm" id="cSend" type="button">发表评论</button>' +
+          '<span class="tea-hint" id="cMsg"></span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="tea-gate" data-tea-gate>登录后可评论与点赞 · <a href="#" data-tea-login>用蓝页账户登录</a></div>';
 
     var likeBtn = document.getElementById('likeBtn');
-    likeBtn.addEventListener('click', function () { this.classList.toggle('on'); });
+    if (likeBtn) {
+      if (p.liked) likeBtn.classList.add('on');
+      likeBtn.addEventListener('click', function () {
+        if (!(window.TeaAuth && window.TeaAuth.isLoggedIn())) { if (window.TeaAuth) window.TeaAuth.login(); return; }
+        likeBtn.disabled = true;
+        fetch('/api/react', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ post: id })
+        })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            likeBtn.disabled = false;
+            if (!d || !d.ok) return;
+            likeBtn.classList.toggle('on', !!d.liked);
+            var n = document.getElementById('likeN');
+            if (n) n.textContent = d.count;
+          })
+          .catch(function () { likeBtn.disabled = false; });
+      });
+    }
+
+    var cSend = document.getElementById('cSend');
+    if (cSend) {
+      cSend.addEventListener('click', function () {
+        var ta = document.getElementById('cText');
+        var msg = document.getElementById('cMsg');
+        var text = ((ta && ta.value) || '').trim();
+        if (!text) { if (msg) msg.textContent = '先写点什么吧～'; return; }
+        cSend.disabled = true;
+        if (msg) msg.textContent = '发送中…';
+        fetch('/api/comment', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ post: id, text: text })
+        })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+          .then(function (res) {
+            cSend.disabled = false;
+            if (res.ok && res.j && res.j.ok) { location.reload(); return; }
+            if (msg) msg.textContent = (res.j && res.j.hint) ? res.j.hint : '评论失败，请重试。';
+          })
+          .catch(function () { cSend.disabled = false; if (msg) msg.textContent = '网络异常，请重试。'; });
+      });
+    }
+
+    if (window.TeaAuth && window.TeaAuth.applyGates) window.TeaAuth.applyGates();
   }
 
   if (!id) { notFound(); return; }
