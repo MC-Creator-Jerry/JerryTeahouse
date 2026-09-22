@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>茶馆 • JerryTeahouse</title>
+<meta name="description" content="茶馆 JerryTeahouse —— 一间慢慢泡茶、慢慢写字的小茶室。" />
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="stylesheet" href="assets/teahouse.css" />
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('tea_theme');
+      if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+  })();
+</script>
+</head>
+<body>
+
+<header class="tea-header">
+  <div class="tea-header-inner">
+    <a class="tea-brand" href="./">
+      <span class="tea-mark">茶</span>
+      <span>茶馆<span class="tea-brand-sub">JerryTeahouse</span></span>
+    </a>
+    <nav class="tea-nav">
+      <a href="./" class="is-active">主页</a>
+      <a href="./posts/">帖子中心</a>
+      <a href="./new/">写帖子</a>
+      <a href="#" id="themeBtn" title="切换明暗">🌙</a>
+    </nav>
+  </div>
+</header>
+
+<main class="tea-wrap">
+
+  <section class="tea-hero">
+    <h1>坐下来，喝杯<span class="tea-em">茶</span>，聊聊天。</h1>
+    <p>这里是<b>茶馆</b> —— 一间慢慢泡茶、慢慢写字的小茶室。泡一壶茶，把想法写下来。</p>
+  </section>
+
+  <hr class="tea-rule" />
+
+  <section>
+    <div class="tea-section-head"><h2>去哪儿逛逛</h2></div>
+    <div class="entry-grid">
+      <a class="entry-card" href="./posts/">
+        <div class="ic">🍵</div>
+        <h3>帖子中心</h3>
+        <p>所有帖子都在这儿，按最新或最热排。</p>
+      </a>
+      <a class="entry-card" href="./new/">
+        <div class="ic">✍️</div>
+        <h3>写帖子</h3>
+        <p>泡一壶新茶，写下你的想法。</p>
+      </a>
+      <a class="entry-card" href="https://mc-creator-jerry-webpage.pages.dev/">
+        <div class="ic">🏠</div>
+        <h3>小蓝页</h3>
+        <p>回到客厅 —— 主页、产品与更多。</p>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <div class="tea-section-head">
+      <h2>最新帖子</h2>
+      <a class="more" href="./posts/">查看全部 →</a>
+    </div>
+    <div class="tea-demo-flag">以下是<strong>示例排版</strong>（非真实帖子），用于预览茶馆风格。</div>
+    <div class="tea-list" id="latestList"></div>
+    <div id="latestWrap"></div>
+  </section>
+
+  <section class="tea-about">
+    <h2>关于茶馆</h2>
+    <p>茶馆是「帖子中心」的独立新家：更安静、更专注，只留帖子，慢慢写、慢慢看。</p>
+    <p>登录将复用<b>小蓝页账户</b>（单点登录），站内代码与数据独立。</p>
+  </section>
+
+</main>
+
+<footer class="tea-footer">
+  <div>茶馆 · JerryTeahouse —— 慢慢来，比较快。</div>
+  <div style="margin-top:6px">© <span id="yr"></span> Jerry · <a href="https://mc-creator-jerry-webpage.pages.dev/">小蓝页</a></div>
+</footer>
+
+<script>
+(function () {
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  var themeBtn = document.getElementById('themeBtn');
+  function syncThemeIcon() { themeBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'; }
+  themeBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('tea_theme', next); } catch (err) {}
+    syncThemeIcon();
+  });
+  syncThemeIcon();
+
+  var DEMO = [
+    { id: 'demo-1', title: '为什么我开了一间「茶馆」', excerpt: '小蓝页是我的客厅，热闹、什么都有；茶馆想更安静一点，只留帖子，慢慢写、慢慢看。', author: 'Jerry', when: '2 小时前', tags: ['随笔', '站点'], likes: 12, comments: 3 },
+    { id: 'demo-2', title: '把「帖子中心」独立出来的取舍', excerpt: '同源最省事，但独立站点才像一间自己的屋子。跨域登录用 OAuth 授权码走服务端，就不受 Cookie 限制。', author: 'Jerry', when: '昨天', tags: ['技术', '架构'], likes: 27, comments: 8 },
+    { id: 'demo-3', title: '第一泡：茶馆配色笔记', excerpt: '暖木色打底，茶绿点睛，剩下交给留白。颜色少一点，呼吸感就多一点。', author: 'Jerry', when: '3 天前', tags: ['设计'], likes: 19, comments: 5 }
+  ];
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function cardHtml(p) {
+    var tags = (p.tags || []).map(function (t) { return '<span class="tag">#' + escapeHtml(t) + '</span>'; }).join('');
+    return '' +
+      '<a class="post-card" href="./post/?id=' + encodeURIComponent(p.id) + '">' +
+        '<h3>' + escapeHtml(p.title) + '</h3>' +
+        '<p class="post-excerpt">' + escapeHtml(p.excerpt) + '</p>' +
+        '<div class="post-meta">' +
+          '<span class="who"><img class="post-avatar" alt="" src="assets/avatar.svg" />' + escapeHtml(p.author || '匿名') + '</span>' +
+          '<span>' + escapeHtml(p.when || '') + '</span>' +
+          '<span class="post-stats"><span>♡ ' + (p.likes || 0) + '</span><span>💬 ' + (p.comments || 0) + '</span></span>' +
+          '<span class="post-tags">' + tags + '</span>' +
+        '</div>' +
+      '</a>';
+  }
+
+  var listEl = document.getElementById('latestList');
+  var wrapEl = document.getElementById('latestWrap');
+
+  function render(posts) {
+    listEl.innerHTML = posts.slice(0, 5).map(cardHtml).join('');
+    wrapEl.innerHTML = '';
+    wrapEl.appendChild(listEl);
+  }
+  function renderEmpty() {
+    wrapEl.innerHTML =
+      '<div class="tea-empty"><div class="tea-empty-mark">茶</div>' +
+      '<h3>茶馆还很安静</h3><p>还没有帖子。等水烧开，写下第一泡。</p>' +
+      '<a class="btn btn-tea" href="./new/">泡一壶新茶</a></div>';
+  }
+
+  var demoOn = false;
+  document.addEventListener('click', function (e) {
+    if (e.target && e.target.id === 'demoBtn') {
+      e.preventDefault();
+      demoOn = !demoOn;
+      document.body.classList.toggle('is-demo', demoOn);
+      e.target.textContent = demoOn ? '隐藏示例布局' : '看看示例布局';
+      if (demoOn) render(DEMO); else load();
+    }
+  });
+
+  function load() {
+    if (demoOn) return;
+    fetch('api/post', { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var posts = (d && d.posts) || [];
+        if (!posts.length) renderEmpty(); else render(posts);
+      })
+      .catch(function () { renderEmpty(); });
+  }
+
+  // 空态里加一个示例按钮（无后端时也能看排版）
+  var origEmpty = renderEmpty;
+  renderEmpty = function () {
+    origEmpty();
+    var b = document.createElement('button');
+    b.id = 'demoBtn'; b.className = 'btn btn-ghost btn-sm'; b.type = 'button';
+    b.textContent = '看看示例布局'; b.style.marginTop = '10px';
+    wrapEl.querySelector('.tea-empty').appendChild(b);
+  };
+  load();
+})();
+</script>
+</body>
+</html>
