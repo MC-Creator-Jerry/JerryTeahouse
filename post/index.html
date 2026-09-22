@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>帖子 · 茶馆</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+<link rel="stylesheet" href="../assets/teahouse.css" />
+<style>
+  .tea-article { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 30px 32px; box-shadow: var(--shadow); }
+  .tea-article h1 { margin: 0 0 14px; font-size: clamp(1.5rem, 3.6vw, 2.05rem); line-height: 1.35; }
+  .tea-article .post-meta { margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+  .tea-body { font-size: 1.02rem; line-height: 1.85; color: var(--text-soft); }
+  .tea-body p { margin: 0 0 1.1em; }
+  .tea-body img { max-width: 100%; border-radius: var(--radius-sm); }
+  .tea-actions { display: flex; gap: 10px; align-items: center; margin: 26px 0 0; padding-top: 20px; border-top: 1px solid var(--border); }
+  .tea-like.on { background: var(--tea-tint); color: var(--tea); border-color: var(--tea-soft); }
+  .tea-sec-title { font-family: var(--font-serif); font-size: 1.15rem; margin: 34px 0 14px; }
+  .tea-comment { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 12px; }
+  .tea-comment .who { font-weight: 600; color: var(--wood); font-size: .94rem; }
+  .tea-comment .when { color: var(--muted); font-size: .8rem; margin-left: 8px; }
+  .tea-comment p { margin: 6px 0 0; color: var(--text-soft); }
+  .tea-composer { margin-top: 26px; }
+  .tea-composer textarea { width: 100%; min-height: 96px; resize: vertical; font-family: inherit; font-size: .98rem; padding: 12px 14px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--panel); color: var(--text); }
+  .tea-gate { margin-top: 26px; padding: 18px; border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); text-align: center; color: var(--muted); background: color-mix(in srgb, var(--panel) 55%, transparent); }
+</style>
+<script>
+  (function () { try { var t = localStorage.getItem('tea_theme'); if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', t); } catch (e) {} })();
+</script>
+</head>
+<body>
+
+<header class="tea-header">
+  <div class="tea-header-inner">
+    <a class="tea-brand" href="../">
+      <span class="tea-mark">茶</span>
+      <span>茶馆<span class="tea-brand-sub">JerryTeahouse</span></span>
+    </a>
+    <nav class="tea-nav">
+      <a href="../">主页</a>
+      <a href="../posts/">帖子中心</a>
+      <a href="../new/">写帖子</a>
+      <a href="#" id="themeBtn" title="切换明暗">🌙</a>
+    </nav>
+  </div>
+</header>
+
+<main class="tea-wrap">
+  <div id="articleWrap"></div>
+</main>
+
+<footer class="tea-footer">
+  <div>JerryTeahouse · 茶室 —— 慢慢来，比较快。</div>
+  <div style="margin-top:6px">© <span id="yr"></span> Jerry · <a href="https://mc-creator-jerry-webpage.pages.dev/">小蓝页</a></div>
+</footer>
+
+<script>
+(function () {
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  var themeBtn = document.getElementById('themeBtn');
+  function syncIcon() { themeBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'; }
+  themeBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    var n = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', n);
+    try { localStorage.setItem('tea_theme', n); } catch (x) {}
+    syncIcon();
+  });
+  syncIcon();
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function nl2p(s) { return esc(s).split(/\n{2,}/).map(function (b) { return '<p>' + b.replace(/\n/g, '<br/>') + '</p>'; }).join(''); }
+
+  var id = new URLSearchParams(location.search).get('id');
+  var wrap = document.getElementById('articleWrap');
+
+  function notFound() {
+    wrap.innerHTML =
+      '<div class="tea-empty"><div class="tea-empty-mark">茶</div>' +
+      '<h3>这壶茶还没泡上</h3><p>没有找到这篇帖子，也许它还在路上。</p>' +
+      '<a class="btn btn-tea" href="../">回到首页</a></div>';
+  }
+
+  function render(p, comments) {
+    var tags = (p.tags || []).map(function (t) { return '<span class="tag">#' + esc(t) + '</span>'; }).join('');
+    var cHtml = (comments || []).map(function (c) {
+      return '<div class="tea-comment"><span class="who">' + esc(c.author || '匿名') + '</span>' +
+        '<span class="when">' + esc(c.when || '') + '</span><p>' + esc(c.text || '') + '</p></div>';
+    }).join('');
+    wrap.innerHTML =
+      '<article class="tea-article">' +
+        '<h1>' + esc(p.title) + '</h1>' +
+        '<div class="post-meta">' +
+          '<span class="who"><img class="post-avatar" alt="" src="../assets/avatar.svg" />' + esc(p.author || '匿名') + '</span>' +
+          '<span>' + esc(p.when || '') + '</span>' +
+          '<span class="post-tags">' + tags + '</span>' +
+        '</div>' +
+        '<div class="tea-body">' + (p.body ? nl2p(p.body) : '<p>' + esc(p.excerpt || '') + '</p>') + '</div>' +
+        '<div class="tea-actions">' +
+          '<button class="btn btn-sm" id="likeBtn" type="button">♡ 喜欢 <span id="likeN">' + (p.likes || 0) + '</span></button>' +
+          '<button class="btn btn-sm" type="button" onclick="location.hash=\'#comments\'">💬 评论 ' + ((comments || []).length || p.comments || 0) + '</button>' +
+        '</div>' +
+      '</article>' +
+      '<h2 class="tea-sec-title" id="comments">评论</h2>' +
+      '<div>' + (cHtml || '<div class="tea-empty" style="padding:28px">还没有评论，来说两句？</div>') + '</div>' +
+      '<div class="tea-gate">登录后可评论与点赞（账户体系将在对接小蓝页 SSO 后开放）</div>';
+
+    var likeBtn = document.getElementById('likeBtn');
+    likeBtn.addEventListener('click', function () { this.classList.toggle('on'); });
+  }
+
+  if (!id) { notFound(); return; }
+  fetch('/api/post?id=' + encodeURIComponent(id), { credentials: 'same-origin' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d || d.error || !d.post) { notFound(); return; }
+      fetch('/api/comment?post=' + encodeURIComponent(id), { credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (c) { render(d.post, (c && c.comments) || []); })
+        .catch(function () { render(d.post, []); });
+    })
+    .catch(function () { notFound(); });
+})();
+</script>
+</body>
+</html>
