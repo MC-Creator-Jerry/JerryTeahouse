@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>写帖子 · 茶馆</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+<link rel="stylesheet" href="../assets/teahouse.css" />
+<style>
+  .tea-form { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 30px; box-shadow: var(--shadow); }
+  .tea-field { margin-bottom: 20px; }
+  .tea-field label { display: block; font-weight: 600; margin-bottom: 7px; font-size: .95rem; }
+  .tea-field input[type="text"], .tea-field textarea {
+    width: 100%; font-family: inherit; font-size: 1rem; color: var(--text);
+    background: var(--panel); border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm); padding: 12px 14px;
+  }
+  .tea-field input:focus, .tea-field textarea:focus { outline: 2px solid color-mix(in srgb, var(--tea) 40%, transparent); border-color: var(--tea-soft); }
+  .tea-field textarea { min-height: 240px; resize: vertical; line-height: 1.8; }
+  .tea-hint { color: var(--muted); font-size: .84rem; margin-top: 6px; }
+  .tea-form-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+</style>
+<script>
+  (function () { try { var t = localStorage.getItem('tea_theme'); if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', t); } catch (e) {} })();
+</script>
+</head>
+<body>
+
+<header class="tea-header">
+  <div class="tea-header-inner">
+    <a class="tea-brand" href="../">
+      <span class="tea-mark">茶</span>
+      <span>茶馆<span class="tea-brand-sub">JerryTeahouse</span></span>
+    </a>
+    <nav class="tea-nav">
+      <a href="../">主页</a>
+      <a href="../posts/">帖子中心</a>
+      <a href="./" class="is-active">写帖子</a>
+      <a href="#" id="themeBtn" title="切换明暗">🌙</a>
+    </nav>
+  </div>
+</header>
+
+<main class="tea-wrap">
+  <div class="tea-hero" style="padding-bottom:18px">
+    <h1>泡一壶新茶</h1>
+    <p>写下标题与正文，选几个标签，就可以端出去了。</p>
+  </div>
+
+  <form class="tea-form" id="composeForm">
+    <div class="tea-field">
+      <label for="fTitle">标题</label>
+      <input type="text" id="fTitle" maxlength="80" placeholder="给这壶茶起个名字…" />
+    </div>
+    <div class="tea-field">
+      <label for="fTags">标签</label>
+      <input type="text" id="fTags" placeholder="随笔, 技术, 设计（逗号分隔，最多 5 个）" />
+      <div class="tea-hint">用逗号或顿号分隔，会自动去重。</div>
+    </div>
+    <div class="tea-field">
+      <label for="fBody">正文</label>
+      <textarea id="fBody" placeholder="慢慢写，不着急…"></textarea>
+      <div class="tea-hint"><span id="charCount">0</span> 字 · Ctrl/⌘ + Enter 发布</div>
+    </div>
+    <div class="tea-form-foot">
+      <button class="btn btn-tea" id="publishBtn" type="submit" disabled>发布</button>
+      <a class="btn btn-ghost" href="../">取消</a>
+      <span class="tea-hint" id="gateMsg">登录后即可发布（将对接小蓝页账户 SSO）</span>
+    </div>
+  </form>
+</main>
+
+<footer class="tea-footer">
+  <div>JerryTeahouse · 茶室 —— 慢慢来，比较快。</div>
+  <div style="margin-top:6px">© <span id="yr"></span> Jerry · <a href="https://mc-creator-jerry-webpage.pages.dev/">小蓝页</a></div>
+</footer>
+
+<script>
+(function () {
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  var themeBtn = document.getElementById('themeBtn');
+  function syncIcon() { themeBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'; }
+  themeBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    var n = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', n);
+    try { localStorage.setItem('tea_theme', n); } catch (x) {}
+    syncIcon();
+  });
+  syncIcon();
+
+  var body = document.getElementById('fBody');
+  var charCount = document.getElementById('charCount');
+  body.addEventListener('input', function () { charCount.textContent = body.value.length; });
+
+  // 一期：无登录态，发布按钮保持禁用；对接 SSO 后放开
+  document.getElementById('composeForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    document.getElementById('gateMsg').textContent = '还没接登录，先存个草稿吧～（SSO 上线后可发布）';
+  });
+  body.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); document.getElementById('composeForm').requestSubmit(); }
+  });
+})();
+</script>
+</body>
+</html>
