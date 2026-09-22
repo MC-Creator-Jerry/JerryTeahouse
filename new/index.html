@@ -6,6 +6,7 @@
 <title>写帖子 · 茶馆</title>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
 <link rel="stylesheet" href="../assets/teahouse.css" />
+<script src="/assets/teahouse.js" defer></script>
 <style>
   .tea-form { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 30px; box-shadow: var(--shadow); }
   .tea-field { margin-bottom: 20px; }
@@ -36,6 +37,7 @@
       <a href="../">主页</a>
       <a href="../posts/">帖子中心</a>
       <a href="./" class="is-active">写帖子</a>
+      <span class="tea-auth-slot" data-tea-auth></span>
       <a href="#" id="themeBtn" title="切换明暗">🌙</a>
     </nav>
   </div>
@@ -65,7 +67,9 @@
     <div class="tea-form-foot">
       <button class="btn btn-tea" id="publishBtn" type="submit" disabled>发布</button>
       <a class="btn btn-ghost" href="../">取消</a>
-      <span class="tea-hint" id="gateMsg">登录后即可发布（将对接小蓝页账户 SSO）</span>
+      <span class="tea-hint" id="gateMsg" data-tea-gate>登录后即可发布（使用小蓝页账户）· <a href="#" data-tea-login>去登录</a></span>
+      <span class="tea-hint" id="asWho" data-tea-only hidden></span>
+      <span class="tea-hint" id="formMsg"></span>
     </div>
   </form>
 </main>
@@ -89,18 +93,66 @@
   });
   syncIcon();
 
+  var titleEl = document.getElementById('fTitle');
+  var tagsEl = document.getElementById('fTags');
   var body = document.getElementById('fBody');
   var charCount = document.getElementById('charCount');
-  body.addEventListener('input', function () { charCount.textContent = body.value.length; });
+  var publishBtn = document.getElementById('publishBtn');
+  var formMsg = document.getElementById('formMsg');
+  var asWho = document.getElementById('asWho');
 
-  // 一期：无登录态，发布按钮保持禁用；对接 SSO 后放开
+  function loggedIn() { return !!(window.TeaAuth && window.TeaAuth.isLoggedIn()); }
+
+  function syncForm() {
+    charCount.textContent = body.value.length;
+    var ok = loggedIn() && titleEl.value.trim().length > 0 && body.value.trim().length > 0;
+    publishBtn.disabled = !ok;
+    if (asWho) {
+      var u = (window.TeaAuth && window.TeaAuth.state.user) || null;
+      asWho.textContent = loggedIn() ? ('将以「' + ((u && (u.name || u.login)) || '茶客') + '」的名义发布') : '';
+    }
+  }
+
+  titleEl.addEventListener('input', syncForm);
+  body.addEventListener('input', syncForm);
+  document.addEventListener('tea-auth-ready', function () {
+    syncForm();
+    if (loggedIn() && !titleEl.value) titleEl.focus();
+  });
+
   document.getElementById('composeForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    document.getElementById('gateMsg').textContent = '还没接登录，先存个草稿吧～（SSO 上线后可发布）';
+    if (!loggedIn()) { if (window.TeaAuth) window.TeaAuth.login(); return; }
+    var title = titleEl.value.trim();
+    var text = body.value.trim();
+    if (!title || !text) return;
+    publishBtn.disabled = true;
+    formMsg.textContent = '正在端出去…';
+    fetch('/api/post', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: title, body: text, tags: tagsEl.value })
+    })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (res) {
+        if (res.ok && res.j && res.j.ok) {
+          location.href = '/post/?id=' + encodeURIComponent(res.j.id);
+          return;
+        }
+        var code = (res.j && res.j.error) || 'failed';
+        if (code === 'login_required') { formMsg.textContent = '登录已过期，请重新登录。'; syncForm(); return; }
+        formMsg.textContent = (res.j && res.j.hint) ? res.j.hint : ('发布失败：' + code);
+        publishBtn.disabled = false;
+      })
+      .catch(function () { formMsg.textContent = '网络异常，请重试。'; publishBtn.disabled = false; });
   });
+
   body.addEventListener('keydown', function (e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); document.getElementById('composeForm').requestSubmit(); }
   });
+
+  syncForm();
 })();
 </script>
 </body>
