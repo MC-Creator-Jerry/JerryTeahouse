@@ -4,26 +4,26 @@
    ============================================================ */
 
 :root {
-  --bg: #f7f2ea;            /* 暖纸底 */
-  --bg-soft: #f1e9dd;
-  --panel: #fffdf9;
-  --card: #fffdf9;
-  --border: #e8ddcd;
-  --border-strong: #d8c9b3;
-  --text: #3a2f26;          /* 暖褐 */
+  --bg: #e9f1e2;            /* 茶绿纸底（背景走绿，不走黄） */
+  --bg-soft: #dde8d4;
+  --panel: #f8fbf4;
+  --card: #f8fbf4;
+  --border: #cbdac1;
+  --border-strong: #b3c7a5;
+  --text: #3a2f26;          /* 暖褐（字色保留） */
   --text-soft: #5c4d3f;
-  --muted: #8a7a68;
+  --muted: #7f7461;
   --wood: #8d6748;          /* 暖木色 */
   --wood-soft: #b08c66;
-  --wood-tint: #f3e7d7;
-  --tea: #5f7d5a;           /* 茶绿 */
+  --wood-tint: #f0e6d4;
+  --tea: #4f7346;           /* 茶绿（略加深，配绿底更稳） */
   --tea-soft: #7fa07f;
-  --tea-tint: #e7efe3;
-  --accent: #5f7d5a;
+  --tea-tint: #e2eedb;
+  --accent: #4f7346;
   --accent-ink: #ffffff;
   --danger: #b4503f;
-  --shadow: 0 1px 2px rgba(70, 52, 32, .04), 0 8px 24px rgba(70, 52, 32, .06);
-  --shadow-hover: 0 2px 6px rgba(70, 52, 32, .08), 0 14px 34px rgba(70, 52, 32, .10);
+  --shadow: 0 1px 2px rgba(38, 56, 40, .05), 0 8px 24px rgba(38, 56, 40, .07);
+  --shadow-hover: 0 2px 6px rgba(38, 56, 40, .09), 0 14px 34px rgba(38, 56, 40, .12);
   --radius: 16px;
   --radius-sm: 10px;
   --maxw: 900px;
@@ -33,12 +33,12 @@
 }
 
 html[data-theme="dark"] {
-  --bg: #1c1814;
-  --bg-soft: #211c17;
-  --panel: #251f19;
-  --card: #251f19;
-  --border: #3a322a;
-  --border-strong: #4b4136;
+  --bg: #131a15;
+  --bg-soft: #18211a;
+  --panel: #1d2620;
+  --card: #1d2620;
+  --border: #2b372d;
+  --border-strong: #3b4a3d;
   --text: #ece3d6;
   --text-soft: #d3c7b6;
   --muted: #a1927d;
@@ -47,7 +47,7 @@ html[data-theme="dark"] {
   --wood-tint: #2e2721;
   --tea: #8fb08a;
   --tea-soft: #6f8c6b;
-  --tea-tint: #26302a;
+  --tea-tint: #232e26;
   --accent: #8fb08a;
   --accent-ink: #17201a;
   --danger: #d98a7a;
@@ -69,8 +69,8 @@ body {
   text-rendering: optimizeLegibility;
   min-height: 100vh;
   background-image:
-    radial-gradient(1200px 600px at 50% -200px, color-mix(in srgb, var(--wood-tint) 70%, transparent), transparent),
-    radial-gradient(900px 500px at 100% 10%, color-mix(in srgb, var(--tea-tint) 45%, transparent), transparent);
+    radial-gradient(1200px 600px at 50% -200px, color-mix(in srgb, var(--tea-tint) 90%, transparent), transparent),
+    radial-gradient(900px 500px at 100% 10%, color-mix(in srgb, var(--tea-soft) 16%, transparent), transparent);
   background-attachment: fixed;
 }
 
@@ -274,6 +274,40 @@ body.is-demo .tea-demo-flag { display: block; }
 }
 .tea-about h2 { margin: 0 0 10px; font-size: 1.2rem; }
 .tea-about p { margin: 0 0 8px; color: var(--muted); }
+
+/* ---------- 表单 / 评论框（共享，子页可直接用） ---------- */
+.tea-form-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tea-form-foot .tea-hint a, .tea-hint a { color: var(--tea); }
+.tea-composer textarea {
+  width: 100%; min-height: 96px; resize: vertical;
+  font-family: inherit; font-size: .98rem; line-height: 1.7;
+  padding: 12px 14px; border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); background: var(--panel); color: var(--text);
+}
+.tea-composer textarea:focus { outline: 2px solid color-mix(in srgb, var(--tea) 40%, transparent); border-color: var(--tea-soft); }
+
+/* ---------- 登录态（小蓝页 SSO） ---------- */
+.tea-auth-link { color: var(--tea); font-weight: 600; }
+.tea-user {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 3px 4px 3px 10px; max-width: 230px;
+  border: 1px solid var(--border-strong); border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+}
+.tea-user-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tea); flex: none; }
+.tea-user-name { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tea-auth-out { color: var(--muted); font-size: .84rem; padding: 2px 7px; border-radius: 999px; }
+.tea-auth-out:hover { background: var(--wood-tint); color: var(--text); text-decoration: none; }
+.tea-notice {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 0 18px; padding: 12px 16px;
+  border: 1px solid var(--border-strong); border-left: 3px solid var(--tea);
+  border-radius: var(--radius-sm);
+  background: var(--panel); color: var(--text-soft); font-size: .94rem;
+}
+.tea-notice button { background: none; border: 0; color: var(--muted); font-size: 1.2rem; cursor: pointer; line-height: 1; }
+/* 门控元素用 [hidden] 切换，避免被 inline-flex 等 display 覆盖 */
+[hidden] { display: none !important; }
 
 /* ---------- 响应式 ---------- */
 @media (max-width: 640px) {
