@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>404 · 茶凉了 · 茶馆</title>
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+<link rel="stylesheet" href="/assets/teahouse.css" />
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('tea_theme');
+      if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+  })();
+</script>
+</head>
+<body>
+
+<header class="tea-header">
+  <div class="tea-header-inner">
+    <a class="tea-brand" href="/">
+      <span class="tea-mark">茶</span>
+      <span>茶馆<span class="tea-brand-sub">JerryTeahouse</span></span>
+    </a>
+    <nav class="tea-nav">
+      <a href="/">主页</a>
+      <a href="/posts/">帖子中心</a>
+      <a href="/new/">写帖子</a>
+      <a href="#" id="themeBtn" title="切换明暗">🌙</a>
+    </nav>
+  </div>
+</header>
+
+<main class="tea-wrap">
+
+  <section class="tea-hero">
+    <h1>这壶茶<span class="tea-em">凉了</span>。</h1>
+    <p>你要找的页面不在茶馆里（<b>404</b>）。也许它还没泡开，或者已经被端走了。</p>
+  </section>
+
+  <hr class="tea-rule" />
+
+  <section>
+    <div class="tea-empty">
+      <p style="margin:0 0 14px">不如回堂里坐坐。</p>
+      <p style="margin:0">
+        <a class="btn btn-tea btn-sm" href="/">回主页</a>
+        <a class="btn btn-ghost btn-sm" href="/posts/">去帖子中心</a>
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="tea-footer">
+  <p>茶馆 · JerryTeahouse · 慢慢泡茶，慢慢写字</p>
+</footer>
+
+<script>
+  (function () {
+    var b = document.getElementById('themeBtn');
+    if (!b) return;
+    b.addEventListener('click', function (e) {
+      e.preventDefault();
+      var now = document.documentElement.getAttribute('data-theme');
+      var next = (now === 'dark') ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      b.textContent = (next === 'dark') ? '☀️' : '🌙';
+      try { localStorage.setItem('tea_theme', next); } catch (err) {}
+    });
+  })();
+</script>
+
+</body>
+</html>
