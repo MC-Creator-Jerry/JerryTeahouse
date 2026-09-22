@@ -1,0 +1,23 @@
+# ============================================================
+#  JerryTeahouse（茶馆）· 独立项目配置
+#  ------------------------------------------------------------
+#  !! 本文件必须留在 jerryteahouse-site/ 目录内 !!
+#
+#  原因（踩过的坑）：wrangler 解析 Pages 配置时，
+#  Functions 目录取的是「配置文件所在目录/functions」。
+#  工作区根目录也有一份 wrangler.toml —— 那是小蓝页的，
+#  它的 functions/ 就是整个小蓝页后端。
+#  一旦在根目录执行 wrangler pages deploy，就会变成
+#  「茶馆的静态资源 + 小蓝页的 Functions」。
+#  所以：本文件在站点目录内，部署时 cwd 也必须是站点目录。
+# ============================================================
+
+name = "jerryteahouse"
+pages_build_output_dir = "."
+compatibility_date = "2024-09-23"
+
+# 茶馆专用 KV（1:1 独立），与小蓝页的 USER_PREFS 完全无关。
+# 部署脚本会在 deploy 前校验此 id 与本账号下的 TEAHOUSE_KV 一致。
+[[kv_namespaces]]
+binding = "TEAHOUSE_KV"
+id = "8e65644b3a514ef59e271588db2f3a91"
