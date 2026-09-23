@@ -3,7 +3,7 @@
 // 用一次性 code 向小蓝页换身份（服务端到服务端），成功后在本域种 tea_sid 会话。
 import {
   getCookie, SSO_COOKIE, createSession, sessionCookie,
-  clearSsoStateCookie
+  clearSsoStateCookie, upsertUser
 } from '../../_lib/teaauth.js';
 
 const IDP = 'https://mc-creator-jerry-webpage.pages.dev';
@@ -70,6 +70,9 @@ export async function onRequestGet(context) {
     isAdmin: !!d.isAdmin,
     provider: d.provider || 'xiaolan'
   });
+
+  // 顺手把作者档案写进茶馆自己的用户目录（帖子/评论/@提及 显示昵称头像用）
+  await upsertUser(kv, { login: d.login, name: d.name, avatar: d.avatar_url });
 
   const next = safeNext(rec.next);
   return redirect(next, [sessionCookie(sid, 60 * 60 * 24 * 30), clearSsoStateCookie()]);
