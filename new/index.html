@@ -1,159 +1,469 @@
-<!DOCTYPE html>
-<html lang="zh">
+﻿<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>写帖子 · 茶馆</title>
-<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
-<link rel="stylesheet" href="../assets/teahouse.css" />
-<script src="/assets/teahouse.js" defer></script>
-<style>
-  .tea-form { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 30px; box-shadow: var(--shadow); }
-  .tea-field { margin-bottom: 20px; }
-  .tea-field label { display: block; font-weight: 600; margin-bottom: 7px; font-size: .95rem; }
-  .tea-field input[type="text"], .tea-field textarea {
-    width: 100%; font-family: inherit; font-size: 1rem; color: var(--text);
-    background: var(--panel); border: 1px solid var(--border-strong);
-    border-radius: var(--radius-sm); padding: 12px 14px;
-  }
-  .tea-field input:focus, .tea-field textarea:focus { outline: 2px solid color-mix(in srgb, var(--tea) 40%, transparent); border-color: var(--tea-soft); }
-  .tea-field textarea { min-height: 240px; resize: vertical; line-height: 1.8; }
-  .tea-hint { color: var(--muted); font-size: .84rem; margin-top: 6px; }
-  .tea-form-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+<meta name="description" content="泡一壶新茶，写下你的想法。" />
+<meta name="author" content="Jerry" />
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+<style>  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { font-size: calc(16px * var(--font-scale)); }
+  html, body { min-height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg); transition: background 0.25s, color 0.25s; }
+
+  .topbar { position: sticky; top: 0; z-index: 100; min-height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background-color: var(--bar-top); background-image: linear-gradient(180deg, var(--bar-top) 0%, var(--bar-top) 45%, var(--bar-bottom) 100%); color: var(--bar-fg); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18); border-radius: 0; }
+  .bar-left { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+  .site-name { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.3px; color: var(--bar-fg); white-space: nowrap; text-decoration: none; cursor: pointer; }
+  .site-name:hover { opacity: 0.9; }
+  .breadcrumb { display: flex; align-items: center; gap: 4px; font-size: 0.78rem; color: var(--bar-fg); white-space: nowrap; opacity: 0.9; }
+  .breadcrumb .bc-sep { opacity: 0.6; }
+  .breadcrumb .bc-sub { opacity: 0.85; }
+  .breadcrumb a { color: var(--bar-fg); text-decoration: none; cursor: pointer; }
+  .breadcrumb a:hover { text-decoration: underline; opacity: 1; }
+  .bar-right { display: flex; align-items: center; gap: 8px; }
+  .bar-btn { border: none; background: rgba(255, 255, 255, 0.08); color: var(--bar-fg); border-radius: 0; padding: 6px 11px; font-size: 0.9rem; font-weight: 600; cursor: pointer; line-height: 1; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+  .bar-btn:hover { background: rgba(255, 255, 255, 0.18); }
+
+  
+  
+  
+  
+
+  .content { max-width: 720px; margin: 0 auto; padding: 40px 24px 64px; }
+  .hero { margin-bottom: 24px; }
+  .hero h1 { font-size: 1.9rem; line-height: 1.25; color: var(--text); margin-bottom: 8px; }
+  .hero p { font-size: 1.02rem; line-height: 1.7; color: var(--muted); max-width: 600px; }
+
+  .card { margin-top: 18px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 24px; box-shadow: var(--card-shadow); }
+  .edit-label { display: block; font-size: 0.82rem; color: var(--muted); margin-top: 14px; font-weight: 600; }
+  .edit-input, .edit-textarea { width: 100%; border: 1px solid var(--card-border); border-radius: 10px; padding: 10px 12px; font-size: 1rem; font-family: inherit; color: var(--text); background: var(--panel-bg); margin-top: 6px; }
+  .edit-input:focus, .edit-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .edit-textarea { min-height: 160px; resize: vertical; line-height: 1.6; }
+  .post-btn { border: none; background: var(--accent); color: #fff; border-radius: 10px; padding: 10px 18px; font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-top: 16px; }
+  .post-btn:hover { filter: brightness(1.08); }
+  .post-btn.secondary { background: rgba(128,128,128,0.18); color: var(--text); }
+  .post-btn.secondary:hover { filter: brightness(1.02); }
+  html[data-theme="dark"] .post-btn.secondary { background: rgba(255,255,255,0.14); }
+  .edit-note { font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
+  .repost-ref { border: 1px solid var(--card-border); border-left: 3px solid var(--accent); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; background: color-mix(in srgb, var(--accent) 6%, var(--panel-bg)); }
+  .repost-ref .rr-label { font-size: 0.72rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .repost-ref .rr-author { font-weight: 700; color: var(--text); text-decoration: none; }
+  .repost-ref .rr-author:hover { color: var(--accent); }
+  .repost-ref .rr-title { font-weight: 700; margin-top: 2px; }
+  .repost-ref .rr-text { font-size: 0.88rem; color: var(--muted); margin-top: 4px; max-height: 72px; overflow: hidden; }
+  .hint { color: var(--muted); opacity: 0.85; font-size: 0.95rem; line-height: 1.7; }
+  .hint a { color: var(--accent); text-decoration: none; font-weight: 600; }
+  .hint a:hover { text-decoration: underline; }
+
+  .toast { position: fixed; left: 50%; top: 22px; transform: translateX(-50%); z-index: 300; background: #1c2733; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 0.9rem; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.25s, transform 0.25s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(4px); }
+  .toast.err { background: var(--danger); }
+
+  .site-footer { border-top: 1px solid var(--card-border); margin-top: 48px; padding: 24px; text-align: center; color: var(--muted); font-size: 0.9rem; line-height: 1.8; }
+  .site-footer a { color: var(--accent); text-decoration: none; }
+  .site-footer a:hover { text-decoration: underline; }
+  @media (max-width: 560px) { .topbar { padding: 0 14px; min-height: 56px; } .site-name { font-size: 1.05rem; } .content { padding: 28px 16px 48px; } .hero h1 { font-size: 1.6rem; } .post-btn { width: 100%; } }
+
+  /* ===== 富文本编辑器（类 Word） ===== */
+  .editor-wrap { margin-top: 6px; border: 1px solid var(--card-border); border-radius: 10px; overflow: hidden; background: var(--panel-bg); }
+  .editor-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .editor-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px 8px; background: color-mix(in srgb, var(--bg) 70%, var(--card-bg)); border-bottom: 1px solid var(--card-border); }
+  .editor-toolbar .rt-btn, .editor-toolbar select, .editor-toolbar input[type="color"] { height: 30px; min-width: 30px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 0 7px; display: inline-flex; align-items: center; justify-content: center; }
+  .editor-toolbar .rt-btn:hover, .editor-toolbar select:hover { background: color-mix(in srgb, var(--accent) 12%, var(--card-bg)); }
+  .editor-toolbar .rt-btn.on { background: color-mix(in srgb, var(--accent) 22%, var(--card-bg)); border-color: var(--accent); }
+  .editor-toolbar select { padding: 0 4px; }
+  .editor-toolbar input[type="color"] { padding: 2px; width: 30px; }
+  .editor-toolbar .tb-sep { width: 1px; height: 20px; background: var(--card-border); margin: 0 3px; }
+  .editor { min-height: 200px; max-height: 460px; overflow-y: auto; padding: 14px 16px; font-size: 1rem; line-height: 1.7; color: var(--text); outline: none; }
+  .editor:empty:before { content: attr(data-placeholder); color: var(--muted); opacity: 0.7; }
+  .editor p { margin: 0 0 8px; }
+  .editor h1, .editor h2, .editor h3, .editor h4 { margin: 10px 0 6px; line-height: 1.35; }
+  .editor h1 { font-size: 1.7rem; } .editor h2 { font-size: 1.4rem; } .editor h3 { font-size: 1.2rem; } .editor h4 { font-size: 1.05rem; }
+  .editor ul, .editor ol { margin: 6px 0 10px 22px; }
+  .editor li { margin: 3px 0; }
+  .editor blockquote { margin: 8px 0; padding: 6px 14px; border-left: 4px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--muted); }
+  .editor a { color: var(--accent); text-decoration: underline; }
+  .editor mark { background: #fff3a0; padding: 0 2px; }
+  .editor hr { border: none; border-top: 1px solid var(--card-border); margin: 12px 0; }
+
+  [hidden] { display: none !important; }
+
+  /* ===== 附件上传 ===== */
+  .att-uploader { margin-top: 8px; }
+  .att-add-btn { border: 1px dashed var(--card-border); background: var(--panel-bg); color: var(--muted); border-radius: 10px; padding: 10px 14px; font-size: 0.9rem; cursor: pointer; width: 100%; text-align: center; }
+  .att-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .att-list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .topic-tip { margin-top: 8px; font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+  .topic-tip b { color: var(--accent); }
+  .att-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--panel-bg); }
+  .att-thumb { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: color-mix(in srgb, var(--accent) 10%, transparent); display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 700; color: var(--accent); overflow: hidden; }
+  .att-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .att-info { flex: 1 1 auto; min-width: 0; }
+  .att-name { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .att-sub { font-size: 0.72rem; color: var(--muted); }
+  .att-remove { flex: 0 0 auto; border: none; background: transparent; color: var(--muted); font-size: 1.2rem; cursor: pointer; line-height: 1; padding: 4px 8px; border-radius: 6px; }
+  .att-remove:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+  .post-btn:disabled { opacity: 0.6; cursor: default; filter: none; }
 </style>
-<script>
-  (function () { try { var t = localStorage.getItem('tea_theme'); if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; document.documentElement.setAttribute('data-theme', t); } catch (e) {} })();
-</script>
+  <link rel="stylesheet" href="/assets/teahouse.css" />
+  <link rel="stylesheet" href="/assets/post.css" />
 </head>
 <body>
-
 <header class="tea-header">
   <div class="tea-header-inner">
-    <a class="tea-brand" href="../">
+    <a class="tea-brand" href="/">
       <span class="tea-mark">茶</span>
       <span>茶馆<span class="tea-brand-sub">JerryTeahouse</span></span>
     </a>
     <nav class="tea-nav">
-      <a href="../">主页</a>
-      <a href="../posts/">帖子中心</a>
-      <a href="./" class="is-active">写帖子</a>
+      <a href="/">主页</a>
+      <a href="/posts/">帖子中心</a>
+      <a href="/new/" class="is-active">写帖子</a>
       <span class="tea-auth-slot" data-tea-auth></span>
       <a href="#" id="themeBtn" title="切换明暗">🌙</a>
     </nav>
   </div>
 </header>
 
-<main class="tea-wrap">
-  <div class="tea-hero" style="padding-bottom:18px">
-    <h1>泡一壶新茶</h1>
-    <p>写下标题与正文，选几个标签，就可以端出去了。</p>
+  <main class="content">
+    <section class="hero">
+      <h1 data-zh="发布帖子" data-en="Publish Post">发布帖子</h1>
+      <p data-zh="写下你的帖子，发布后会显示在帖子中心。" data-en="Write your post; it will appear in the Post Center.">写下你的帖子，发布后会显示在帖子中心。</p>
+    </section>
+
+    <section class="card" id="formCard" hidden>
+      <p class="edit-note" id="editNote" hidden></p>
+      <div class="repost-ref" id="repostRef" hidden>
+        <div class="rr-label">转发自</div>
+        <a class="rr-author" id="rrAuthor" href="#"></a>
+        <div class="rr-title" id="rrTitle"></div>
+        <div class="rr-text" id="rrText"></div>
+      </div>
+      <label class="edit-label" for="pTitle" data-zh="标题" data-en="Title">标题</label>
+      <input class="edit-input" id="pTitle" maxlength="200" placeholder="帖子标题" />
+      <span class="char-count" data-for="pTitle">0 / 200</span>
+      <label class="edit-label" for="pBody" data-zh="正文" data-en="Body">正文</label>
+      <div class="editor-wrap">
+        <div class="editor-toolbar" id="rtToolbar">
+          <button type="button" class="rt-btn" data-cmd="bold" title="粗体 (Ctrl+B)"><b>B</b></button>
+          <button type="button" class="rt-btn" data-cmd="italic" title="斜体 (Ctrl+I)"><i>I</i></button>
+          <button type="button" class="rt-btn" data-cmd="underline" title="下划线 (Ctrl+U)"><u>U</u></button>
+          <button type="button" class="rt-btn" data-cmd="strikeThrough" title="删除线"><s>S</s></button>
+          <span class="tb-sep"></span>
+          <select id="rtFont" title="字体">
+            <option value="">默认字体</option>
+            <option value="SimSun, serif">宋体</option>
+            <option value="SimHei, sans-serif">黑体</option>
+            <option value="KaiTi, serif">楷体</option>
+            <option value="Microsoft YaHei, sans-serif">微软雅黑</option>
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="Times New Roman, serif">Times New Roman</option>
+            <option value="Courier New, monospace">等宽</option>
+          </select>
+          <select id="rtSize" title="字号">
+            <option value="">默认</option>
+            <option value="13px">小</option>
+            <option value="16px">正常</option>
+            <option value="20px">大</option>
+            <option value="28px">特大</option>
+            <option value="36px">标题</option>
+          </select>
+          <input type="color" id="rtColor" title="文字颜色" value="#1c2733" />
+          <input type="color" id="rtBg" title="高亮" value="#fff3a0" />
+          <span class="tb-sep"></span>
+          <button type="button" class="rt-btn" data-cmd="justifyLeft" title="左对齐">⬅</button>
+          <button type="button" class="rt-btn" data-cmd="justifyCenter" title="居中">⬌</button>
+          <button type="button" class="rt-btn" data-cmd="justifyRight" title="右对齐">➡</button>
+          <button type="button" class="rt-btn" data-cmd="justifyFull" title="两端对齐">⬌⬌</button>
+          <span class="tb-sep"></span>
+          <button type="button" class="rt-btn" data-cmd="insertUnorderedList" title="无序列表">•</button>
+          <button type="button" class="rt-btn" data-cmd="insertOrderedList" title="有序列表">1.</button>
+          <button type="button" class="rt-btn" data-cmd="formatBlock" data-val="blockquote" title="引用">❝</button>
+          <button type="button" class="rt-btn" id="rtLink" title="插入链接">🔗</button>
+          <span class="tb-sep"></span>
+          <button type="button" class="rt-btn" data-cmd="removeFormat" title="清除格式">⌫</button>
+        </div>
+        <div class="editor" id="pBody" contenteditable="true" data-placeholder="帖子内容……（违禁词会被拦截，支持粗体/斜体/字体/颜色等排版）"></div>
+      </div>
+      <span class="char-count" data-for="pBody">0 / 5000</span>
+      <p class="topic-tip">用 <b>#话题</b> 可以给帖子打话题标签，例如「今天聊聊 #人工智能 」，发布后点话题即可看同话题的帖子。</p>
+      <label class="edit-label" for="pFiles" data-zh="附件" data-en="Attachments">附件</label>
+      <div class="att-uploader">
+        <button type="button" class="att-add-btn" id="attAddBtn" data-zh="＋ 添加文件（视频 / 图片 / 音频 / 文档，单文件 ≤ 20MB）" data-en="Add files (video/image/audio/doc, ≤20MB each)">＋ 添加文件（视频 / 图片 / 音频 / 文档，单文件 ≤ 20MB）</button>
+        <input type="file" id="pFiles" multiple hidden />
+        <div class="att-list" id="attList"></div>
+      </div>
+      <button class="post-btn" id="postBtn" data-zh="发布" data-en="Publish">发布</button>
+      <button class="post-btn secondary" id="draftBtn" data-zh="保存草稿" data-en="Save draft">保存草稿</button>
+    </section>
+
+    <section class="card" id="loginHint" hidden>
+      <p class="hint" data-zh="发布帖子需要登录。" data-en="You need to sign in to publish a post.">发布帖子需要登录。<br />
+        <a href="#" id="loginLink" data-zh="点此登录" data-en="Sign in">点此登录</a>。
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div>© 2026 Jerry's webpage · 小蓝页 · <a href="/" data-zh="返回主页" data-en="Home">返回主页</a> · <a href="/" data-zh="联系与建议" data-en="Contact">联系与建议</a></div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="float-actions">
+    <a class="fab" href="/"  aria-label="语言" title="语言">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18"/></svg>
+    </a>
+    <a class="fab" href="/settings/"  aria-label="设置" title="设置">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </a>
   </div>
 
-  <form class="tea-form" id="composeForm">
-    <div class="tea-field">
-      <label for="fTitle">标题</label>
-      <input type="text" id="fTitle" maxlength="80" placeholder="给这壶茶起个名字…" />
-    </div>
-    <div class="tea-field">
-      <label for="fTags">标签</label>
-      <input type="text" id="fTags" placeholder="随笔, 技术, 设计（逗号分隔，最多 5 个）" />
-      <div class="tea-hint">用逗号或顿号分隔，会自动去重。</div>
-    </div>
-    <div class="tea-field">
-      <label for="fBody">正文</label>
-      <textarea id="fBody" placeholder="慢慢写，不着急…"></textarea>
-      <div class="tea-hint"><span id="charCount">0</span> 字 · Ctrl/⌘ + Enter 发布</div>
-    </div>
-    <div class="tea-form-foot">
-      <button class="btn btn-tea" id="publishBtn" type="submit" disabled>发布</button>
-      <a class="btn btn-ghost" href="../">取消</a>
-      <span class="tea-hint" id="gateMsg" data-tea-gate>登录后即可发布（使用小蓝页账户）· <a href="#" data-tea-login>去登录</a></span>
-      <span class="tea-hint" id="asWho" data-tea-only hidden></span>
-      <span class="tea-hint" id="formMsg"></span>
-    </div>
-  </form>
-</main>
-
-<footer class="tea-footer">
-  <div>JerryTeahouse · 茶室 —— 慢慢来，比较快。</div>
-  <div style="margin-top:6px">© <span id="yr"></span> Jerry · <a href="https://mc-creator-jerry-webpage.pages.dev/">小蓝页</a></div>
-</footer>
-
+  <script src="/assets/teahouse.js" defer></script>
 <script>
-(function () {
-  document.getElementById('yr').textContent = new Date().getFullYear();
-  var themeBtn = document.getElementById('themeBtn');
-  function syncIcon() { themeBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'; }
-  themeBtn.addEventListener('click', function (e) {
-    e.preventDefault();
-    var n = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', n);
-    try { localStorage.setItem('tea_theme', n); } catch (x) {}
-    syncIcon();
-  });
-  syncIcon();
+  (function () {
+    try {
+      var t = localStorage.getItem('tea_theme');
+      if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+  })();
+</script>
+  <script src="/assets/tea-compat.js"></script>
+  
+  <script>
+    (function () {
+      var FORBIDDEN = ['fuck','shit','bitch','asshole','bastard','dick','cunt','whore','slut','nigger','faggot','retard','tranny','nazi','kill yourself','kys','傻逼','sb','草泥马','操你','日你','妈的','贱人','婊子','杂种','滚蛋','废青','支那','洋奴','汉奸','狗杂种','加微信','扫码领','免费送','刷单','博彩','赌博','色情','裸聊','办证','代开发票','点击领取','一元购','日赚','月入过万','私聊客服'];
+      function findForbidden(t){ if(!t) return null; var low=String(t).toLowerCase(); for(var i=0;i<FORBIDDEN.length;i++){ if(low.indexOf(FORBIDDEN[i].toLowerCase())!==-1) return FORBIDDEN[i]; } return null; }
 
-  var titleEl = document.getElementById('fTitle');
-  var tagsEl = document.getElementById('fTags');
-  var body = document.getElementById('fBody');
-  var charCount = document.getElementById('charCount');
-  var publishBtn = document.getElementById('publishBtn');
-  var formMsg = document.getElementById('formMsg');
-  var asWho = document.getElementById('asWho');
+      var formCard = document.getElementById('formCard');
+      var loginHint = document.getElementById('loginHint');
+      var loginLink = document.getElementById('loginLink');
+      var pTitle = document.getElementById('pTitle');
+      var pBody = document.getElementById('pBody');
+      var postBtn = document.getElementById('postBtn');
+      var draftBtn = document.getElementById('draftBtn');
+      var toastEl = document.getElementById('toast');
+      var charCount = document.querySelector('.char-count[data-for="pBody"]');
+      var BODY_MAX = 5000;
 
-  function loggedIn() { return !!(window.TeaAuth && window.TeaAuth.isLoggedIn()); }
+      function toast(msg, isErr) {
+        toastEl.textContent = msg;
+        toastEl.className = 'toast show' + (isErr ? ' err' : '');
+        setTimeout(function () { toastEl.className = 'toast' + (isErr ? ' err' : ''); }, 2600);
+      }
 
-  function syncForm() {
-    charCount.textContent = body.value.length;
-    var ok = loggedIn() && titleEl.value.trim().length > 0 && body.value.trim().length > 0;
-    publishBtn.disabled = !ok;
-    if (asWho) {
-      var u = (window.TeaAuth && window.TeaAuth.state.user) || null;
-      asWho.textContent = loggedIn() ? ('将以「' + ((u && (u.name || u.login)) || '茶客') + '」的名义发布') : '';
-    }
-  }
+      function bodyText() { return (pBody.innerText || '').replace(/\n+$/, ''); }
+      function updateCount() {
+        if (charCount) charCount.textContent = bodyText().length + ' / ' + BODY_MAX;
+      }
+      pBody.addEventListener('input', updateCount);
 
-  titleEl.addEventListener('input', syncForm);
-  body.addEventListener('input', syncForm);
-  document.addEventListener('tea-auth-ready', function () {
-    syncForm();
-    if (loggedIn() && !titleEl.value) titleEl.focus();
-  });
-
-  document.getElementById('composeForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    if (!loggedIn()) { if (window.TeaAuth) window.TeaAuth.login(); return; }
-    var title = titleEl.value.trim();
-    var text = body.value.trim();
-    if (!title || !text) return;
-    publishBtn.disabled = true;
-    formMsg.textContent = '正在端出去…';
-    fetch('/api/post', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ title: title, body: text, tags: tagsEl.value })
-    })
-      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-      .then(function (res) {
-        if (res.ok && res.j && res.j.ok) {
-          location.href = '/post/?id=' + encodeURIComponent(res.j.id);
+      // ===== 富文本工具栏 =====
+      var toolbar = document.getElementById('rtToolbar');
+      function exec(cmd, val) {
+        pBody.focus();
+        try { document.execCommand(cmd, false, val || null); } catch (e) {}
+        refreshToolbarState();
+      }
+      function refreshToolbarState() {
+        var map = { bold: 'bold', italic: 'italic', underline: 'underline', strikeThrough: 'strikeThrough',
+          insertUnorderedList: 'insertUnorderedList', insertOrderedList: 'insertOrderedList', justifyLeft: 'justifyLeft', justifyCenter: 'justifyCenter', justifyRight: 'justifyRight', justifyFull: 'justifyFull' };
+        Object.keys(map).forEach(function (cmd) {
+          var btn = toolbar.querySelector('[data-cmd="' + cmd + '"]');
+          if (!btn) return;
+          var on = false;
+          try { on = document.queryCommandState(cmd); } catch (e) {}
+          btn.classList.toggle('on', !!on);
+        });
+      }
+      // 点击工具栏不丢失编辑器选区
+      toolbar.addEventListener('mousedown', function (e) { if (e.target.closest('select, input')) return; e.preventDefault(); });
+      toolbar.addEventListener('click', function (e) {
+        var btn = e.target.closest('.rt-btn');
+        if (!btn) return;
+        if (btn.id === 'rtLink') {
+          var url = window.prompt('链接地址（以 http:// 或 https:// 开头）：', 'https://');
+          if (url && /^https?:\/\//i.test(url)) exec('createLink', url);
           return;
         }
-        var code = (res.j && res.j.error) || 'failed';
-        if (code === 'login_required') { formMsg.textContent = '登录已过期，请重新登录。'; syncForm(); return; }
-        formMsg.textContent = (res.j && res.j.hint) ? res.j.hint : ('发布失败：' + code);
-        publishBtn.disabled = false;
-      })
-      .catch(function () { formMsg.textContent = '网络异常，请重试。'; publishBtn.disabled = false; });
-  });
+        var cmd = btn.getAttribute('data-cmd');
+        var val = btn.getAttribute('data-val');
+        exec(cmd, val);
+      });
+      document.getElementById('rtFont').addEventListener('change', function () { if (this.value) { exec('fontName', this.value); this.selectedIndex = 0; } });
+      document.getElementById('rtSize').addEventListener('change', function () { if (this.value) { exec('fontSize', this.value); this.selectedIndex = 0; } });
+      document.getElementById('rtColor').addEventListener('input', function () { exec('foreColor', this.value); });
+      document.getElementById('rtBg').addEventListener('input', function () { try { exec('hiliteColor', this.value); } catch (e) { exec('backColor', this.value); } });
+      pBody.addEventListener('keyup', refreshToolbarState);
+      pBody.addEventListener('mouseup', refreshToolbarState);
 
-  body.addEventListener('keydown', function (e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); document.getElementById('composeForm').requestSubmit(); }
-  });
+      // ===== 附件上传 =====
+      var MAX_FILE = 20 * 1024 * 1024;
+      var pFiles = document.getElementById('pFiles');
+      var attAddBtn = document.getElementById('attAddBtn');
+      var attList = document.getElementById('attList');
+      var selectedFiles = [];
+      function fmtSize(n) { if (n < 1024) return n + ' B'; if (n < 1048576) return (n / 1024).toFixed(1) + ' KB'; return (n / 1048576).toFixed(1) + ' MB'; }
+      function extOf(name) { var p = String(name).split('.').pop(); return (p ? p : 'FILE').toUpperCase().slice(0, 5); }
+      function renderAtt() {
+        attList.innerHTML = '';
+        selectedFiles.forEach(function (f, i) {
+          var item = document.createElement('div'); item.className = 'att-item';
+          var thumb = document.createElement('div'); thumb.className = 'att-thumb';
+          if (/^image\//.test(f.type || '')) {
+            var img = document.createElement('img');
+            img.src = URL.createObjectURL(f); img.alt = '';
+            img.onload = function () { URL.revokeObjectURL(img.src); };
+            thumb.appendChild(img);
+          } else {
+            thumb.textContent = extOf(f.name);
+          }
+          var info = document.createElement('div'); info.className = 'att-info';
+          var nm = document.createElement('div'); nm.className = 'att-name'; nm.textContent = f.name;
+          var sub = document.createElement('div'); sub.className = 'att-sub'; sub.textContent = fmtSize(f.size);
+          info.appendChild(nm); info.appendChild(sub);
+          var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'att-remove'; rm.textContent = '×'; rm.title = '移除';
+          rm.addEventListener('click', function () { selectedFiles.splice(i, 1); renderAtt(); });
+          item.appendChild(thumb); item.appendChild(info); item.appendChild(rm);
+          attList.appendChild(item);
+        });
+      }
+      attAddBtn.addEventListener('click', function () { pFiles.click(); });
+      pFiles.addEventListener('change', function () {
+        Array.prototype.forEach.call(pFiles.files, function (f) {
+          if (f.size > MAX_FILE) { toast('文件「' + f.name + '」超过 20MB 上限', true); return; }
+          if (selectedFiles.length >= 20) { toast('最多 20 个附件', true); return; }
+          selectedFiles.push(f);
+        });
+        pFiles.value = '';
+        renderAtt();
+      });
 
-  syncForm();
-})();
-</script>
+      function uploadOne(file) {
+        return new Promise(function (resolve, reject) {
+          var fd = new FormData();
+          fd.append('file', file, file.name);
+          fetch('/api/upload', { method: 'POST', body: fd })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+            .then(function (res) {
+              if (res.ok && res.body.ok) resolve({ key: res.body.key, name: res.body.name, type: res.body.type, size: res.body.size });
+              else reject(new Error(res.body && res.body.error ? res.body.error : 'upload_failed'));
+            })
+            .catch(function () { reject(new Error('network')); });
+        });
+      }
+
+      var editId = new URLSearchParams(location.search).get('edit');
+      var repostId = new URLSearchParams(location.search).get('repost');
+
+      function post(status) {
+        var title = pTitle.value.trim();
+        var html = pBody.innerHTML.trim();
+        var text = bodyText().trim();
+        if (!title && !text) { toast('标题和正文不能都为空', true); return; }
+        if (text.length > BODY_MAX) { toast('正文过长（上限 ' + BODY_MAX + ' 字）', true); return; }
+        var w = findForbidden(title) || findForbidden(text);
+        if (w) { toast('含违禁词：「' + w + '」', true); return; }
+        if (!selectedFiles.length) { doPublish(title, html, [], status); return; }
+        postBtn.disabled = true; postBtn.textContent = '上传中 0/' + selectedFiles.length;
+        var done = 0;
+        Promise.all(selectedFiles.map(function (f) {
+          return uploadOne(f).then(function (meta) { done++; postBtn.textContent = '上传中 ' + done + '/' + selectedFiles.length; return meta; });
+        })).then(function (files) {
+          doPublish(title, html, files, status);
+        }).catch(function (err) {
+          postBtn.disabled = false; postBtn.textContent = '发布';
+          toast(err && err.message === 'too_large' ? '文件过大（上限 20MB）' : '附件上传失败，请重试', true);
+        });
+      }
+      function doPublish(title, html, files, status) {
+        var isEdit = !!editId;
+        var method = isEdit ? 'PATCH' : 'POST';
+        var payload = { title: title, body: html, status: status || 'published' };
+        if (repostId) payload.repostOf = repostId;
+        if (isEdit) {
+          payload.id = editId;
+          if (files && files.length) payload.files = files; // 编辑态仅在有新附件时覆盖，否则保留原附件
+        } else {
+          payload.files = files;
+        }
+        fetch('/api/post', { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+          .then(function (res) {
+            postBtn.disabled = false; postBtn.textContent = '发布';
+            if (res.ok) {
+              selectedFiles = [];
+              if (status === 'draft') {
+                toast(isEdit ? '草稿已更新 ✓' : '草稿已保存 ✓');
+              } else {
+                toast(isEdit ? '已更新 ✓' : '已发布 ✓');
+              }
+              setTimeout(function () { try { sessionStorage.setItem('__xl_intra', '1'); sessionStorage.setItem('xl_nav_loader', '1'); } catch (e) {} location.href = '/posts/'; }, 700);
+            }
+            else if (res.body && res.body.error === 'unauthorized') { toast('请先登录', true); }
+            else if (res.body && res.body.error === 'forbidden') { toast('服务器拦截：含违禁词「' + (res.body.word || '') + '」', true); }
+            else if (res.body && res.body.error === 'rate_limited') { toast('操作过快，请稍后再试', true); }
+            else if (res.body && res.body.error === 'not_found') { toast('帖子不存在或已被删除', true); }
+            else { toast(isEdit ? '更新失败' : '发布失败', true); }
+          })
+          .catch(function () { postBtn.disabled = false; postBtn.textContent = '发布'; toast('发布失败（网络错误）', true); });
+      }
+
+      function loadForEdit() {
+        fetch('/api/post?id=' + encodeURIComponent(editId))
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (p) {
+            if (!p || p.error) { toast('无法加载该帖子（可能不是你的帖子或已删除）', true); return; }
+            pTitle.value = p.title || '';
+            pBody.innerHTML = p.body || '';
+            updateCount();
+            var note = document.getElementById('editNote');
+            note.hidden = false;
+            note.textContent = '正在编辑帖子（最后更新：' + new Date(p.editedTs || p.ts || Date.now()).toLocaleString() + '）。';
+            var h1 = document.querySelector('.hero h1'); if (h1) h1.textContent = '编辑帖子';
+            var hp = document.querySelector('.hero p'); if (hp) hp.textContent = '修改后重新发布即可更新原帖。';
+            var bc = document.querySelector('.breadcrumb .bc-sub'); if (bc) bc.textContent = '编辑帖子';
+            var pb = document.getElementById('postBtn'); if (pb) pb.textContent = '保存并更新';
+            var db = document.getElementById('draftBtn'); if (db) db.textContent = '保存为草稿';
+          })
+          .catch(function () { toast('加载失败', true); });
+      }
+
+      function loadForRepost() {
+        fetch('/api/post?id=' + encodeURIComponent(repostId))
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (p) {
+            if (!p || p.error) { toast('无法加载原帖', true); return; }
+            var ref = document.getElementById('repostRef');
+            ref.hidden = false;
+            var author = document.getElementById('rrAuthor');
+            author.textContent = '@' + (p.login || '?');
+            author.href = '/profile/?user=' + encodeURIComponent(p.login || '');
+            document.getElementById('rrTitle').textContent = p.title || '（无标题）';
+            document.getElementById('rrText').textContent = (p.body ? p.body.replace(/<[^>]+>/g, '') : '').slice(0, 140);
+            var h1 = document.querySelector('.hero h1'); if (h1) h1.textContent = '转发帖子';
+            var hp = document.querySelector('.hero p'); if (hp) hp.textContent = '写下你的看法，转发这篇帖子。';
+            var pb = document.getElementById('postBtn'); if (pb) pb.textContent = '转发';
+          })
+          .catch(function () { toast('加载失败', true); });
+      }
+
+      fetch('/api/me').then(function (r) { return r.ok ? r.json() : null; }).then(function (me) {
+          if (me && me.login) {
+            formCard.hidden = false; updateCount();
+            if (editId) loadForEdit();
+            else if (repostId) loadForRepost();
+          }
+        else { loginHint.hidden = false; }
+      }).catch(function () { loginHint.hidden = false; });
+
+      if (loginLink) loginLink.addEventListener('click', function (e) { e.preventDefault(); if (window.JW_AUTH && window.JW_AUTH.loginWithGitHub) window.JW_AUTH.loginWithGitHub(); else location.href = '/'; });
+      postBtn.addEventListener('click', function () { post('published'); });
+      draftBtn.addEventListener('click', function () { post('draft'); });
+    })();
+  </script>
 </body>
 </html>
+
