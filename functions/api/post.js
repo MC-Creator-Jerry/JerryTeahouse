@@ -1,115 +1,192 @@
 // Cloudflare Pages Function: /api/post
-//   GET  /api/post            列表（?sort=hot 按热度）
-//   GET  /api/post?id=xxx     单篇
-//   POST /api/post            发帖（需小蓝页 SSO 登录）
-// KV（TEAHOUSE_KV）：
-//   posts:index -> JSON 数组 [{id,title,excerpt,author,tags,likes,comments,ts,when}]（最多 200 条）
-//   post:<id>   -> JSON {id,title,body,author,tags,likes,comments,ts,when}
-// 未绑定 KV 时优雅降级为空列表（不影响静态页）。
-import { getSession, readJson, randomId, json } from '../_lib/teaauth.js';
+// GET  (no param)            -> { posts:[...] }            (public list, published only, newest first)
+// GET  ?id=<id>              -> { ...post }                (single; drafts only for author/admin)
+// GET  ?ids=id1,id2          -> { posts:[...] }            (batch; published only, for favorites)
+// GET  ?drafts=1             -> { posts:[...] }            (login required; only requester's drafts)
+// POST {title,body,files?}   -> { ok, post }              (login required; forbidden scan; status=published)
+// PATCH {id,title,body,files?,status?} -> { ok, post }    (author/admin; status: draft|published)
+// DELETE ?id=                -> { ok }                     (author or admin only)
+// Storage: KV "posts:list" (array, newest first)
+import { getLogin, isAdminLogin, json } from '../_lib/auth.js';
+import { scanTexts } from '../_lib/forbidden.js';
+import { sanitizeHtml, htmlToText } from '../_lib/sanitize.js';
+import { topicsForPost } from '../_lib/topics.js';
+import { rateLimit } from '../_lib/rate.js';
+import { isBanned } from '../_lib/ban.js';
+
+const KEY = 'posts:list';
+const MAX = 200;
+const BODY_MAX = 20000;
+
+async function readList(kv) {
+  const raw = await kv.get(KEY);
+  let list = raw ? JSON.parse(raw) : [];
+  return Array.isArray(list) ? list : [];
+}
+
+function publicView(p, all) {
+  if (!p) return p;
+  const body = typeof p.body === 'string' ? sanitizeHtml(p.body) : p.body;
+  const topics = Array.isArray(p.topics) ? p.topics : topicsForPost(p.title, htmlToText(body || ''));
+  const v = { ...p, body, topics };
+  if (p.repostOf && all && Array.isArray(all)) {
+    const orig = all.find((x) => x.id === p.repostOf);
+    if (orig) { v.repostLogin = orig.login; v.repostTitle = orig.title; }
+  }
+  return v;
+}
 
 export async function onRequestGet(context) {
   const kv = context.env.TEAHOUSE_KV;
   const url = new URL(context.request.url);
   const id = url.searchParams.get('id');
+  const ids = url.searchParams.get('ids');
+  const drafts = url.searchParams.get('drafts');
+  const login = await getLogin(context);
+  const list = await readList(kv);
 
+  // 单帖
   if (id) {
-    if (!kv) return json({ error: 'not_ready' }, 503);
-    const raw = await kv.get('post:' + id);
-    if (!raw) return json({ error: 'not_found' }, 404);
-    let post = null;
-    try { post = JSON.parse(raw); } catch (e) { post = null; }
-    if (!post) return json({ error: 'bad_data' }, 500);
-
-    // 已登录时附带「我是否点过赞」，供详情页初始化按钮状态
-    let liked = false;
-    try {
-      const sess = await getSession(context);
-      if (sess && sess.sub) {
-        const lraw = await kv.get('likes:' + id);
-        if (lraw) {
-          const arr = JSON.parse(lraw);
-          liked = Array.isArray(arr) && arr.indexOf(String(sess.sub)) >= 0;
-        }
-      }
-    } catch (e) { liked = false; }
-
-    return json({ post: post, liked: liked });
+    const p = list.find((x) => x.id === id);
+    if (!p) return json({ error: 'not_found' }, 404);
+    const isOwnerOrAdmin = login && (p.login === login || (await isAdminLogin(context, login)));
+    if (p.status === 'draft' && !isOwnerOrAdmin) return json({ error: 'not_found' }, 404);
+    return json(publicView(p, list));
   }
-
-  if (!kv) return json({ posts: [] });
-  const raw = await kv.get('posts:index');
-  let posts = [];
-  if (raw) { try { posts = JSON.parse(raw) || []; } catch (e) { posts = []; } }
-  if (!Array.isArray(posts)) posts = [];
-  const sort = url.searchParams.get('sort') || 'all';
-  posts = posts.slice();
-  if (sort === 'hot') posts.sort(function (a, b) { return (b.likes || 0) - (a.likes || 0); });
-  else posts.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
-  return json({ posts: posts });
-}
-
-function cleanTags(v) {
-  const raw = Array.isArray(v) ? v.join(',') : String(v || '');
-  const seen = [];
-  raw.split(/[,，、;；\s]+/).forEach(function (t) {
-    const s = t.trim().slice(0, 20);
-    if (s && seen.indexOf(s) < 0 && seen.length < 5) seen.push(s);
-  });
-  return seen;
+  // 批量（收藏页用）
+  if (ids) {
+    const want = ids.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 50);
+    const map = {};
+    list.forEach((p) => { if (want.includes(p.id)) map[p.id] = p; });
+    const out = want.map((id) => {
+      const p = map[id];
+      if (!p || p.status === 'draft') return null; // 批量只返回公开帖
+      return { id: p.id, login: p.login, title: p.title, ts: p.ts, topics: p.topics || [] };
+    }).filter(Boolean);
+    return json({ posts: out });
+  }
+  // 我的草稿
+  if (drafts) {
+    if (!login) return json({ error: 'unauthorized' }, 401);
+    const out = list.filter((p) => p.login === login && p.status === 'draft').map((p) => publicView(p, list));
+    return json({ posts: out });
+  }
+  // 公开列表（仅已发布）
+  const safe = list.filter((p) => p.status !== 'draft').map((p) => publicView(p, list));
+  return json({ posts: safe });
 }
 
 export async function onRequestPost(context) {
+  const login = await getLogin(context);
+  if (!login) return json({ error: 'unauthorized' }, 401);
+  const banned = await isBanned(context, login);
+  if (banned) return json({ error: 'banned', until: banned.until }, 403);
+  const rl = await rateLimit(context.env.TEAHOUSE_KV, 'post', login, { limit: 10, windowSec: 60 });
+  if (!rl.ok) return json({ error: 'rate_limited', retryAfter: rl.retryAfter }, 429);
+
+  const body = await context.request.json().catch(() => ({}));
+  const title = String(body.title || '').slice(0, 200);
+  const raw = String(body.body || '').slice(0, BODY_MAX);
+  const text = htmlToText(raw);
+  if (!title.trim() && !text.trim()) return json({ error: 'empty' }, 400);
+  const bad = scanTexts([title, text]);
+  if (bad) return json({ error: 'forbidden', word: bad }, 400);
+
   const kv = context.env.TEAHOUSE_KV;
-  if (!kv) return json({ error: 'not_ready' }, 503);
+  const list = await readList(kv);
+  const clean = sanitizeHtml(raw);
 
-  const sess = await getSession(context);
-  if (!sess) return json({ error: 'login_required' }, 401);
-
-  const body = await readJson(context.request);
-  const title = String(body.title || '').trim();
-  const text = String(body.body || '').trim();
-  const tags = cleanTags(body.tags);
-
-  if (title.length < 1 || title.length > 80) {
-    return json({ error: 'bad_title', hint: '标题需要 1–80 字' }, 400);
+  let files = [];
+  if (Array.isArray(body.files)) {
+    files = body.files
+      .filter(function (f) { return f && typeof f.key === 'string' && /^[A-Za-z0-9-]+$/.test(f.key); })
+      .slice(0, 20)
+      .map(function (f) {
+        return {
+          key: f.key,
+          name: String(f.name || 'file').slice(0, 200),
+          type: String(f.type || 'application/octet-stream').slice(0, 200),
+          size: (typeof f.size === 'number' && f.size >= 0) ? f.size : 0,
+        };
+      });
   }
-  if (text.length < 1 || text.length > 20000) {
-    return json({ error: 'bad_body', hint: '正文需要 1–20000 字' }, 400);
+
+  const topics = topicsForPost(title, text);
+  let repostOf = '';
+  if (typeof body.repostOf === 'string') {
+    const rid = body.repostOf.trim();
+    if (rid && list.some((x) => x.id === rid)) repostOf = rid;
   }
-
-  const now = Date.now();
-  const id = now.toString(36) + randomId(4);
-  const when = new Date(now).toISOString().slice(0, 10);
-  const author = sess.name || sess.login || '茶客';
-
-  const post = {
-    id: id, ts: now, when: when,
-    title: title, body: text, tags: tags,
-    author: author,
-    authorLogin: sess.login || '',
-    authorSub: sess.sub || '',
-    likes: 0, comments: 0
-  };
-  await kv.put('post:' + id, JSON.stringify(post));
-
-  let index = [];
-  try { index = JSON.parse(await kv.get('posts:index')) || []; } catch (e) { index = []; }
-  if (!Array.isArray(index)) index = [];
-  index.unshift({
-    id: id, ts: now, when: when, title: title, tags: tags,
-    author: author, excerpt: text.slice(0, 160).replace(/\n+/g, ' '),
-    likes: 0, comments: 0
-  });
-  if (index.length > 200) index = index.slice(0, 200);
-  await kv.put('posts:index', JSON.stringify(index));
-
-  return json({ ok: true, id: id });
+  const post = { id: String(Date.now()), ts: Date.now(), login, title, body: clean, files, topics, status: 'published', repostOf };
+  list.unshift(post);
+  if (list.length > MAX) list.length = MAX;
+  await kv.put(KEY, JSON.stringify(list));
+  return json({ ok: true, post: { id: post.id, status: post.status } });
 }
 
-export async function onRequest(context) {
-  const m = context.request.method;
-  if (m === 'GET') return onRequestGet(context);
-  if (m === 'POST') return onRequestPost(context);
-  return json({ error: 'method_not_allowed' }, 405);
+export async function onRequestPatch(context) {
+  const login = await getLogin(context);
+  if (!login) return json({ error: 'unauthorized' }, 401);
+  const rl = await rateLimit(context.env.TEAHOUSE_KV, 'edit', login, { limit: 20, windowSec: 60 });
+  if (!rl.ok) return json({ error: 'rate_limited', retryAfter: rl.retryAfter }, 429);
+
+  const kv = context.env.TEAHOUSE_KV;
+  const body = await context.request.json().catch(() => ({}));
+  const id = String(body.id || '');
+  const list = await readList(kv);
+  const idx = list.findIndex((p) => p.id === id);
+  if (idx === -1) return json({ error: 'not_found' }, 404);
+  const target = list[idx];
+  if (target.login !== login && !(await isAdminLogin(context, login))) return json({ error: 'forbidden' }, 403);
+
+  const title = typeof body.title === 'string' ? body.title.slice(0, 200) : target.title;
+  const raw = typeof body.body === 'string' ? body.body.slice(0, BODY_MAX) : target.body;
+  const text = htmlToText(raw);
+  if (!title.trim() && !text.trim()) return json({ error: 'empty' }, 400);
+  const bad = scanTexts([title, text]);
+  if (bad) return json({ error: 'forbidden', word: bad }, 400);
+
+  const clean = sanitizeHtml(raw);
+  let files = target.files;
+  if (Array.isArray(body.files)) {
+    files = body.files
+      .filter(function (f) { return f && typeof f.key === 'string' && /^[A-Za-z0-9-]+$/.test(f.key); })
+      .slice(0, 20)
+      .map(function (f) {
+        return {
+          key: f.key,
+          name: String(f.name || 'file').slice(0, 200),
+          type: String(f.type || 'application/octet-stream').slice(0, 200),
+          size: (typeof f.size === 'number' && f.size >= 0) ? f.size : 0,
+        };
+      });
+  }
+  const topics = topicsForPost(title, text);
+  const status = body.status === 'draft' ? 'draft' : 'published';
+  const updated = { ...target, title, body: clean, files, topics, status, editedTs: Date.now() };
+  list[idx] = updated;
+  await kv.put(KEY, JSON.stringify(list));
+  return json({ ok: true, post: { id: updated.id, status: updated.status } });
+}
+
+export async function onRequestDelete(context) {
+  const login = await getLogin(context);
+  if (!login) return json({ error: 'unauthorized' }, 401);
+  const url = new URL(context.request.url);
+  const id = url.searchParams.get('id');
+  const kv = context.env.TEAHOUSE_KV;
+  const list = await readList(kv);
+  const target = list.find((p) => p.id === id);
+  if (!target) return json({ ok: true });
+  if (target.login !== login && !(await isAdminLogin(context, login))) {
+    return json({ error: 'forbidden' }, 403);
+  }
+  if (target.files && Array.isArray(target.files)) {
+    for (const f of target.files) {
+      if (f && f.key) { try { await kv.delete('file:' + f.key); } catch (e) {} }
+    }
+  }
+  const next = list.filter((p) => p.id !== id);
+  await kv.put(KEY, JSON.stringify(next));
+  return json({ ok: true });
 }
