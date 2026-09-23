@@ -318,3 +318,201 @@ body.is-demo .tea-demo-flag { display: block; }
   .post-card { padding: 17px 17px; }
   .post-tags { margin-left: 0; }
 }
+
+/* ============================================================
+   以下为「搬来的组件」桥接层：
+   小蓝页的组件（含仿 M365 编辑器 editbar）读的是 --card-bg / --card-border 一套变量，
+   这里把它们别名到茶馆的茶色变量，避免再复制一份颜色定义。
+   ============================================================ */
+:root {
+  --card-bg: var(--card);
+  --card-border: var(--border);
+  --card-shadow: var(--shadow);
+  --panel-bg: var(--panel);
+  --bar-top: var(--wood);
+  --bar-bottom: color-mix(in srgb, var(--wood) 86%, #000);
+  --bar-fg: #fff;
+}
+
+/* ---------- 顶栏：登录态（头像 + 下拉菜单） ---------- */
+.tea-user-wrap { position: relative; display: inline-flex; align-items: center; }
+.tea-user-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 3px 10px 3px 4px; max-width: 220px; cursor: pointer;
+  border: 1px solid var(--border-strong); border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  color: var(--text); font: inherit; font-size: .92rem;
+  transition: background .18s ease, border-color .18s ease;
+}
+.tea-user-btn:hover { background: var(--wood-tint); border-color: var(--wood-soft); }
+.tea-user-avatar {
+  width: 26px; height: 26px; border-radius: 50%; flex: none;
+  object-fit: cover; background: var(--wood-tint);
+  display: grid; place-items: center;
+  font-family: var(--font-serif); font-size: .86rem; color: var(--wood);
+}
+img.tea-user-avatar { display: block; }
+.tea-user-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tea-user-caret { color: var(--muted); font-size: .7rem; line-height: 1; }
+.tea-user-menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 80;
+  min-width: 168px; padding: 6px;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: var(--shadow-hover);
+  display: none; flex-direction: column; gap: 2px;
+}
+.tea-user-wrap.open .tea-user-menu { display: flex; }
+.tea-user-menu a {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 11px; border-radius: 9px; color: var(--text-soft); font-size: .92rem;
+}
+.tea-user-menu a:hover { background: var(--wood-tint); color: var(--text); text-decoration: none; }
+.tea-user-menu .sep { height: 1px; margin: 5px 4px; background: var(--border); }
+.tea-user-menu .danger { color: var(--danger); }
+.tea-user-menu .badge-admin {
+  margin-left: auto; font-size: .72rem; padding: 1px 7px; border-radius: 999px;
+  background: var(--tea-tint); color: var(--tea); font-weight: 600;
+}
+
+/* ---------- 浮动操作区（仿 M365 页面编辑器入口） ---------- */
+.tea-float {
+  position: fixed; right: 20px; bottom: 20px; z-index: 60;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 9px;
+}
+.tea-float button, .tea-float a {
+  font: inherit; font-size: .88rem; cursor: pointer;
+  padding: 9px 15px; border-radius: 999px;
+  border: 1px solid var(--border-strong); background: var(--panel); color: var(--text);
+  box-shadow: var(--shadow); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.tea-float button:hover, .tea-float a:hover { background: var(--wood-tint); text-decoration: none; }
+.tea-float .is-primary { background: var(--tea); border-color: var(--tea); color: var(--accent-ink); font-weight: 600; }
+.tea-float .is-primary:hover { background: color-mix(in srgb, var(--tea) 88%, #000); }
+@media (max-width: 640px) {
+  .tea-float { right: 12px; bottom: 12px; }
+  .tea-user-btn { max-width: 150px; }
+}
+
+/* ============================================================
+   发帖输入框：仿 M365 块（editor-m365.js 配套样式）
+   ============================================================ */
+.rt-group { display: inline-flex; align-items: center; gap: 4px; }
+/* 与模板 .rt-btn 同款外观；单独类名以便不改动搬来的发帖模板脚本 */
+.editor-toolbar .m365-tb {
+  height: 30px; min-width: 30px; padding: 0 7px;
+  border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text);
+  border-radius: 6px; cursor: pointer; font-size: .9rem; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.editor-toolbar .m365-tb:hover { background: color-mix(in srgb, var(--accent) 14%, var(--card-bg)); border-color: var(--accent); }
+.rt-menu {
+  position: fixed; z-index: 90; display: flex; flex-direction: column;
+  min-width: 150px; padding: 5px;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: var(--shadow-hover);
+}
+.rt-menu-item {
+  text-align: left; font: inherit; font-size: .9rem; padding: 8px 10px;
+  border: 0; border-radius: 8px; background: transparent;
+  color: var(--text-soft); cursor: pointer;
+}
+.rt-menu-item:hover { background: var(--wood-tint); color: var(--text); }
+
+.m365-block { display: block; max-width: 100%; margin: 10px 0; border-radius: 10px; }
+.m365-block.is-selected { outline: 2px dashed var(--tea); outline-offset: 3px; }
+.m365-image { height: auto; }
+.m365-video { background: #000; }
+.m365-audio { width: 100%; }
+.m365-file {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border: 1px solid var(--border-strong);
+  background: var(--panel); color: var(--text); text-decoration: none;
+}
+.m365-file:hover { background: var(--wood-tint); text-decoration: none; }
+.m365-file-ext {
+  font-size: .72rem; font-weight: 700; letter-spacing: .5px;
+  padding: 2px 7px; border-radius: 6px; background: var(--tea-tint); color: var(--tea);
+}
+.m365-file-name { word-break: break-all; }
+.m365-textbox {
+  border: 1px dashed var(--border-strong); padding: 12px 14px; min-height: 52px;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+}
+.m365-mini, .m365-badge {
+  position: fixed; z-index: 95; display: flex; align-items: center; gap: 3px;
+  padding: 4px; background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: var(--shadow-hover);
+}
+.m365-mini button, .m365-badge button {
+  font: inherit; font-size: .86rem; line-height: 1; padding: 5px 8px;
+  border: 0; border-radius: 7px; background: transparent; color: var(--text-soft); cursor: pointer;
+}
+.m365-mini button:hover, .m365-badge button:hover { background: var(--wood-tint); color: var(--text); }
+.m365-badge-size { font-size: .78rem; color: var(--muted); padding: 0 5px; white-space: nowrap; }
+.m365-handle {
+  position: fixed; z-index: 96; width: 14px; height: 14px;
+  border-radius: 3px; background: var(--tea); border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3); cursor: nwse-resize;
+}
+
+/* ============================================================
+   表单 / 面板 / 表格（设置页 · 个人主页 · 管理台 共用）
+   ============================================================ */
+.tea-panel {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 22px 24px;
+  box-shadow: var(--shadow); margin-top: 18px;
+}
+.tea-panel > h2 { margin: 0 0 4px; font-size: 1.12rem; }
+.tea-panel .sub { color: var(--muted); font-size: .88rem; margin: 0 0 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: .86rem; color: var(--text-soft); font-weight: 600; }
+.field input[type="text"], .field input[type="url"], .field input[type="number"], .field textarea, .field select {
+  font: inherit; font-size: .95rem; padding: 10px 12px; color: var(--text);
+  background: var(--panel); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); width: 100%;
+}
+.field textarea { min-height: 88px; resize: vertical; }
+.field .hint { font-size: .8rem; color: var(--muted); }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.row > .field { flex: 1 1 200px; margin-bottom: 0; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  font: inherit; font-size: .86rem; cursor: pointer;
+  padding: 7px 13px; border-radius: 999px;
+  border: 1px solid var(--border-strong); background: var(--panel); color: var(--text-soft);
+}
+.chip:hover { background: var(--wood-tint); color: var(--text); }
+.chip.is-on { background: var(--tea); border-color: var(--tea); color: var(--accent-ink); font-weight: 600; }
+.tea-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.tea-table th, .tea-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.tea-table th { color: var(--muted); font-weight: 600; font-size: .82rem; white-space: nowrap; }
+.tea-table tr:last-child td { border-bottom: 0; }
+.tea-table td.act { white-space: nowrap; text-align: right; }
+.mini-btn {
+  font: inherit; font-size: .8rem; cursor: pointer;
+  padding: 4px 10px; border-radius: 999px; margin-left: 4px;
+  border: 1px solid var(--border-strong); background: var(--panel); color: var(--text-soft);
+}
+.mini-btn:hover { background: var(--wood-tint); color: var(--text); }
+.mini-btn.warn { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--border-strong)); }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 12px; }
+.stat { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
+.stat b { display: block; font-size: 1.5rem; font-family: var(--font-serif); line-height: 1.3; }
+.stat span { color: var(--muted); font-size: .84rem; }
+.profile-head { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.profile-avatar {
+  width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
+  background: var(--wood-tint); display: grid; place-items: center;
+  font-family: var(--font-serif); font-size: 1.8rem; color: var(--wood); flex: none;
+}
+.profile-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.profile-meta h1 { margin: 0; font-size: 1.5rem; }
+.profile-meta .login { color: var(--muted); font-size: .88rem; }
+.profile-meta .bio { color: var(--text-soft); font-size: .95rem; margin: 4px 0 0; }
+.empty-note { color: var(--muted); font-size: .92rem; padding: 14px 0; }
+.tag-toggle { display: inline-flex; align-items: center; gap: 6px; }
+
+
+
