@@ -615,6 +615,9 @@
       }
       function sortPosts(list) {
         var arr = list.slice();
+        // 茶馆：管理台置顶的帖子在所有排序模式下都排最前
+        var pinned = arr.filter(function (p) { return p && p.pinned; });
+        arr = arr.filter(function (p) { return !(p && p.pinned); });
         if (sortMode === 'follow') {
           arr.sort(function (a, b) {
             var fa = (states[a.id] && states[a.id].followed) ? 1 : 0;
@@ -631,7 +634,7 @@
         } else {
           arr.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
         }
-        return arr;
+        return pinned.concat(arr);
       }
 
       function renderAndBind(posts, counts) {
