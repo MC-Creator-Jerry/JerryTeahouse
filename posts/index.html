@@ -1,12 +1,259 @@
-<!DOCTYPE html>
-<html lang="zh">
+﻿<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>帖子中心 · 茶馆</title>
-<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
-<link rel="stylesheet" href="../assets/teahouse.css" />
-<script src="/assets/teahouse.js" defer></script>
+<meta name="description" content="茶馆帖子中心：所有帖子都在这儿，按最新或最热排。" />
+<meta name="author" content="Jerry" />
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+<style>  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { font-size: calc(16px * var(--font-scale)); }
+  html, body { min-height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif; color: var(--text); background: var(--bg); transition: background 0.25s, color 0.25s; }
+
+  .topbar { position: sticky; top: 0; z-index: 100; min-height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background-color: var(--bar-top); background-image: linear-gradient(180deg, var(--bar-top) 0%, var(--bar-top) 45%, var(--bar-bottom) 100%); color: var(--bar-fg); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18); border-radius: 0; }
+  .bar-left { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+  .site-name { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.3px; color: var(--bar-fg); white-space: nowrap; text-decoration: none; cursor: pointer; }
+  .site-name:hover { opacity: 0.9; }
+  .breadcrumb { display: flex; align-items: center; gap: 4px; font-size: 0.78rem; color: var(--bar-fg); white-space: nowrap; opacity: 0.9; }
+  .breadcrumb .bc-sep { opacity: 0.6; }
+  .breadcrumb .bc-sub { opacity: 0.85; }
+  .breadcrumb a { color: var(--bar-fg); text-decoration: none; cursor: pointer; }
+  .breadcrumb a:hover { text-decoration: underline; opacity: 1; }
+  .bar-right { display: flex; align-items: center; gap: 8px; }
+  .bar-btn { border: none; background: rgba(255, 255, 255, 0.08); color: var(--bar-fg); border-radius: 0; padding: 6px 11px; font-size: 0.9rem; font-weight: 600; cursor: pointer; line-height: 1; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+  .bar-btn:hover { background: rgba(255, 255, 255, 0.18); }
+
+  
+  
+  
+  
+
+  .content { max-width: 820px; margin: 0 auto; padding: 40px 24px 64px; }
+  .hero { margin-bottom: 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .hero h1 { font-size: 1.9rem; line-height: 1.25; color: var(--text); margin-bottom: 8px; }
+  .hero p { font-size: 1.02rem; line-height: 1.7; color: var(--muted); max-width: 600px; }
+  .hero .post-link { border: none; background: var(--accent); color: #fff; border-radius: 10px; padding: 9px 16px; font-size: 0.92rem; font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap; }
+  .hero .post-link:hover { filter: brightness(1.08); }
+
+  .card { margin-top: 18px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--card-shadow); }
+  .post { border: 1px solid var(--card-border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 14px; background: var(--card-bg); }
+  .post:last-child { margin-bottom: 0; }
+  .post .head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .post .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--card-border); flex: 0 0 auto; }
+  .post .author { font-weight: 700; color: var(--text); font-size: 0.95rem; text-decoration: none; }
+  .post .author:hover { color: var(--accent); }
+  .post .meta { font-size: 0.76rem; color: var(--muted); margin-left: auto; white-space: nowrap; }
+  .post h3 { font-size: 1.05rem; color: var(--text); margin-bottom: 6px; }
+  .post h3 a.ptitle { color: var(--text); text-decoration: none; }
+  .post h3 a.ptitle:hover { color: var(--accent); }
+  /* 帖子底部操作条：评论图标按钮 + 点赞图标按钮（右下角） */
+  .post-foot { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .post-foot .foot-spacer { flex: 1; }
+  .foot-btn { border: 1px solid var(--card-border); background: var(--card-bg); color: var(--muted); border-radius: 10px; padding: 6px 13px; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; line-height: 1; transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.1s; }
+  .foot-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .foot-btn:active { transform: scale(0.96); }
+  .foot-btn .ico { font-size: 1.1rem; line-height: 1; }
+  .foot-btn .cnt { font-weight: 700; font-size: 0.85rem; }
+  .foot-btn.like-btn.on { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, transparent); }
+  .foot-btn[disabled] { opacity: 0.55; cursor: default; }
+  .post .cmlink { display: inline-block; margin-top: 10px; font-size: 0.85rem; color: var(--accent); text-decoration: none; font-weight: 600; }
+  .post .cmlink:hover { text-decoration: underline; }
+  /* 帖子卡片内嵌评论（默认折叠，仅显示点赞最高的 2 条） */
+  .inline-comments { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--card-border); }
+  .inline-comment { display: flex; gap: 10px; padding: 9px 0; cursor: pointer; }
+  .inline-comment:last-child { padding-bottom: 0; }
+  .inline-comment .ic-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: var(--card-border); flex: 0 0 auto; }
+  .inline-comment .ic-main { min-width: 0; flex: 1; }
+  .inline-comment .ic-row1 { display: flex; align-items: baseline; gap: 8px; }
+  .inline-comment .ic-author { font-weight: 700; color: var(--text); font-size: 0.88rem; text-decoration: none; }
+  .inline-comment .ic-author:hover { color: var(--accent); }
+  .inline-comment .ic-time { font-size: 0.7rem; color: var(--muted); }
+  .inline-comment .ic-text { font-size: 0.9rem; line-height: 1.55; color: var(--text); white-space: pre-wrap; word-break: break-word; margin-top: 1px; }
+  .inline-comment .ic-text .mention { color: var(--accent); font-weight: 700; text-decoration: none; }
+  .inline-comment .ic-actions { margin-top: 3px; }
+  .inline-comment .ic-like { border: none; background: transparent; color: var(--muted); font-size: 0.78rem; cursor: pointer; padding: 0; font-weight: 600; display: inline-flex; align-items: center; gap: 3px; }
+  .inline-comment .ic-like:hover { color: var(--accent); }
+  .inline-comment .ic-like.on { color: var(--accent); }
+  .ic-rest.ic-collapsed { display: none; }
+  .ic-expand { display: block; width: 100%; margin-top: 8px; border: none; background: transparent; color: var(--accent); font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 7px 0; border-radius: 8px; }
+  .ic-expand:hover { background: rgba(0,120,212,0.08); }
+  /* 排布方式切换：从新到旧 / 关注优先 */
+  .sort-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .sort-tab { border: 1px solid var(--card-border); background: var(--card-bg); color: var(--muted); border-radius: 999px; padding: 6px 16px; font-size: 0.9rem; cursor: pointer; transition: border-color .15s, color .15s, background .15s; }
+  .sort-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .sort-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .post p { font-size: 0.98rem; line-height: 1.7; color: var(--muted); white-space: pre-wrap; word-break: break-word; }
+  .post .del { border: none; background: transparent; color: var(--muted); font-size: 0.82rem; cursor: pointer; font-weight: 700; margin-top: 8px; padding: 0; }
+  .post .del:hover { text-decoration: underline; }
+  .hint { color: var(--muted); opacity: 0.7; font-style: italic; font-size: 0.95rem; }
+
+  .post-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .pa-btn { border: 1px solid var(--card-border); background: var(--card-bg); color: var(--muted); border-radius: 8px; padding: 5px 13px; font-size: 0.82rem; font-weight: 600; cursor: pointer; line-height: 1.2; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+  .pa-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .pa-btn.on { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); border-color: var(--accent); }
+  .pa-btn[disabled] { opacity: .5; cursor: not-allowed; border-color: var(--card-border) !important; color: var(--muted) !important; background: var(--card-bg) !important; }
+  .pa-block-menu { position: fixed; z-index: 1000; min-width: 184px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.16); padding: 6px; display: flex; flex-direction: column; gap: 2px; animation: xlPopIn .14s ease; }
+  .pa-block-menu-head { font-size: .72rem; color: var(--muted); padding: 4px 10px 6px; }
+  .pa-block-menu-item { text-align: left; border: none; background: transparent; padding: 9px 10px; border-radius: 7px; font-size: .85rem; color: var(--text); cursor: pointer; font-family: inherit; }
+  .pa-block-menu-item:hover { background: rgba(0,120,212,.08); color: var(--accent); }
+  .pa-block-menu-item.pa-block-cancel { color: var(--muted); border-top: 1px solid var(--card-border); margin-top: 2px; border-radius: 0 0 7px 7px; }
+  @keyframes xlPopIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  .post-blocked { display: flex; align-items: center; gap: 12px; padding: 14px 16px; margin-bottom: 14px; background: var(--card-bg); border: 1px dashed var(--card-border); border-radius: var(--radius); color: var(--muted); font-size: 0.9rem; }
+  .post-blocked .pb-text { flex: 1; }
+
+  .toast { position: fixed; left: 50%; top: 22px; transform: translateX(-50%); z-index: 300; background: #1c2733; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 0.9rem; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.25s, transform 0.25s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(4px); }
+  .toast.err { background: var(--danger); }
+
+  .site-footer { border-top: 1px solid var(--card-border); margin-top: 48px; padding: 24px; text-align: center; color: var(--muted); font-size: 0.9rem; line-height: 1.8; }
+  .site-footer a { color: var(--accent); text-decoration: none; }
+  .site-footer a:hover { text-decoration: underline; }
+  @media (max-width: 560px) { .topbar { padding: 0 14px; min-height: 56px; } .site-name { font-size: 1.05rem; } .content { padding: 28px 16px 48px; } .hero h1 { font-size: 1.6rem; } }
+  /* ---- 帖子查看弹层（把“查看帖子”功能搬进帖子中心） ---- */
+  .post-card.clickable { cursor: pointer; }
+  .post-card.clickable:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(0,120,212,0.12); }
+
+  .modal-overlay { position: fixed; inset: 0; z-index: 400; background: rgba(15, 23, 32, 0.55); display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
+  .modal-overlay[hidden] { display: none !important; }
+  .modal { position: relative; width: 100%; max-width: 820px; background: var(--bg); border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); padding: 26px 26px 32px; margin: auto; }
+  .modal-close { position: absolute; top: 14px; right: 16px; width: 34px; height: 34px; border: none; border-radius: 50%; background: var(--card-border); color: var(--text); font-size: 1.3rem; line-height: 1; cursor: pointer; }
+  .modal-close:hover { background: var(--muted); color: #fff; }
+  .modal .back-link { display: inline-block; margin-bottom: 14px; color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.92rem; }
+  .modal .back-link:hover { text-decoration: underline; }
+
+  .comments-title { font-size: 1.2rem; color: var(--accent); margin: 22px 0 12px; }
+  .comment { display: flex; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--card-border); }
+  .comment:last-child { border-bottom: none; }
+  .comment .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--card-border); flex: 0 0 auto; }
+  .comment .body-wrap { min-width: 0; flex: 1; }
+  .comment .row1 { display: flex; align-items: baseline; gap: 8px; }
+  .comment .author { font-weight: 700; color: var(--text); font-size: 0.92rem; text-decoration: none; }
+  .comment .author:hover { color: var(--accent); }
+  .comment .time { font-size: 0.72rem; color: var(--muted); }
+  .comment .reply-to { font-size: 0.74rem; color: var(--accent); margin-top: 2px; }
+  .comment .text { font-size: 0.97rem; line-height: 1.7; color: var(--text); white-space: pre-wrap; word-break: break-word; margin-top: 3px; }
+  .comment .text .mention { color: var(--accent); font-weight: 700; text-decoration: none; }
+  .comment .text .mention:hover { text-decoration: underline; }
+  .comment .actions { margin-top: 6px; display: flex; gap: 14px; }
+  .comment .act { border: none; background: transparent; color: var(--muted); font-size: 0.82rem; cursor: pointer; padding: 0; font-weight: 600; }
+  .comment .act:hover { color: var(--accent); }
+  .comment .act.del { color: var(--muted); }
+
+  .composer { margin-top: 20px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--card-shadow); position: relative; }
+  .composer .reply-note { font-size: 0.82rem; color: var(--accent); margin-bottom: 8px; display: none; }
+  .composer .reply-note b { font-weight: 700; }
+  .composer .reply-note .cancel { color: var(--muted); cursor: pointer; margin-left: 8px; text-decoration: underline; }
+  .edit-textarea { width: 100%; border: 1px solid var(--card-border); border-radius: 10px; padding: 10px 12px; font-size: 1rem; font-family: inherit; color: var(--text); background: var(--panel-bg); resize: vertical; line-height: 1.6; min-height: 90px; }
+  .edit-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .composer .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 12px; }
+  .composer .hint { font-size: 0.8rem; color: var(--muted); }
+  .composer .hint code { background: var(--panel-border); padding: 1px 5px; border-radius: 5px; font-size: 0.78rem; }
+  .post-btn { border: none; background: var(--accent); color: #fff; border-radius: 10px; padding: 9px 18px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .post-btn:hover { filter: brightness(1.08); }
+  .post-btn:disabled { opacity: 0.55; cursor: default; }
+  .mention-pop { position: absolute; z-index: 50; background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 10px; box-shadow: 0 8px 24px rgba(20, 35, 59, 0.18); max-width: 280px; max-height: 220px; overflow-y: auto; display: none; }
+  .mention-pop .mi { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; font-size: 0.9rem; }
+  .mention-pop .mi:hover, .mention-pop .mi.active { background: var(--bg); }
+  .mention-pop .mi img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+  .mention-pop .mi .ml { font-weight: 700; color: var(--text); }
+  .mention-pop .mi .mn { color: var(--muted); font-size: 0.8rem; }
+  .hint-empty { color: var(--muted); opacity: 0.8; font-style: italic; font-size: 0.95rem; padding: 14px 0; }
+  body.modal-open { overflow: hidden; }
+  [hidden] { display: none !important; }
+</style>
+  <link rel="stylesheet" href="/assets/teahouse.css" />
+  <link rel="stylesheet" href="/assets/post.css" />
+</head>
+<body>
+<header class="tea-header">
+  <div class="tea-header-inner">
+    <a class="tea-brand" href="/">
+      <span class="tea-mark">茶</span>
+      <span>茶馆<span class="tea-brand-sub">JerryTeahouse</span></span>
+    </a>
+    <nav class="tea-nav">
+      <a href="/">主页</a>
+      <a href="/posts/" class="is-active">帖子中心</a>
+      <a href="/new/">写帖子</a>
+      <span class="tea-auth-slot" data-tea-auth></span>
+      <a href="#" id="themeBtn" title="切换明暗">🌙</a>
+    </nav>
+  </div>
+</header>
+
+  <main class="content">
+    <section class="hero">
+      <div>
+        <h1 data-zh="帖子中心" data-en="Post Center">帖子中心</h1>
+        <p id="sortHint" data-zh="站内所有帖子，按发布时间从新到旧排列。" data-en="All posts, newest first.">站内所有帖子，按发布时间从新到旧排列。</p>
+      </div>
+      <a class="post-link" href="/new/" data-zh="发布帖子" data-en="Publish Post">发布帖子</a>
+    </section>
+
+    <section class="card">
+      <div class="topic-bar" id="topicBar"></div>
+      <div class="topic-filter" id="topicFilter" hidden>
+        <span class="tf-label" id="tfLabel"></span>
+        <button class="tf-clear" id="tfClear" type="button" data-zh="清除筛选" data-en="Clear filter">清除筛选</button>
+      </div>
+      <div class="sort-bar" id="sortBar">
+        <button class="sort-tab active" data-mode="new" type="button" data-zh="从新到旧" data-en="Newest first">从新到旧</button>
+        <button class="sort-tab" data-mode="follow" type="button" data-zh="关注优先" data-en="Followed first">关注优先</button>
+        <button class="sort-tab" data-mode="hot" type="button" data-zh="热门" data-en="Hot">热门</button>
+      </div>
+      <div id="list"></div>
+      <div id="empty" class="hint" hidden data-zh="还没有帖子，去发布第一条吧。" data-en="No posts yet. Publish the first one!">还没有帖子，去发布第一条吧。</div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div>© 2026 Jerry's webpage · 小蓝页 · <a href="/" data-zh="返回主页" data-en="Home">返回主页</a> · <a href="/" data-zh="联系与建议" data-en="Contact">联系与建议</a></div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="float-actions">
+    <a class="fab" href="/"  aria-label="语言" title="语言">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18"/></svg>
+    </a>
+    <a class="fab" href="/settings/"  aria-label="设置" title="设置">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </a>
+  </div>
+
+  <!-- 帖子查看弹层：把“查看帖子 / 评论”功能搬进帖子中心 -->
+  <div class="modal-overlay" id="postModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="帖子详情">
+      <button class="modal-close" id="modalClose" type="button" aria-label="关闭">×</button>
+      <section id="mPost" class="post" hidden></section>
+
+      <h2 class="comments-title" id="mCTitle" data-zh="评论" data-en="Comments">评论</h2>
+      <section class="card" style="background:transparent;border:none;box-shadow:none;padding:0">
+        <div id="mComments"></div>
+        <div id="mEmpty" class="hint-empty" hidden data-zh="还没有评论，来抢沙发吧。" data-en="No comments yet. Be the first!">还没有评论，来抢沙发吧。</div>
+      </section>
+
+      <section class="composer" id="mComposer" hidden>
+        <div class="reply-note" id="mReplyNote"></div>
+        <textarea class="edit-textarea auto-grow" id="mBody" maxlength="2000" placeholder="写下你的评论……（输入 @ 可提及他人，违禁词会被拦截）"></textarea>
+        <div class="mention-pop" id="mMentionPop"></div>
+        <div class="foot">
+          <span class="hint" data-zh="支持 @提及：输入 @ 加用户名" data-en="Use @ to mention someone">支持 <code>@</code> 提及：输入 @ 加用户名</span>
+          <button class="post-btn" id="mSend" data-zh="发表评论" data-en="Comment">发表评论</button>
+        </div>
+      </section>
+
+      <section class="composer" id="mLoginHint" hidden>
+        <p class="hint" style="opacity:.85;line-height:1.7" data-zh="评论需要登录。" data-en="You need to sign in to comment.">评论需要登录。<br />
+          <a href="#" id="mLoginLink" data-zh="点此登录" data-en="Sign in">点此登录</a>。
+        </p>
+      </section>
+    </div>
+  </div>
+
+  <script src="/assets/teahouse.js" defer></script>
 <script>
   (function () {
     try {
@@ -16,141 +263,766 @@
     } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
   })();
 </script>
-</head>
-<body>
+  <script src="/assets/tea-compat.js"></script>
+  
+  <script src="/assets/post-actions.js"></script>
+  <script src="/assets/poll.js"></script>
+  <script src="/assets/reactions.js"></script>
+  <script>
+    (function () {
+      var listEl = document.getElementById('list');
+      var emptyEl = document.getElementById('empty');
 
-<header class="tea-header">
-  <div class="tea-header-inner">
-    <a class="tea-brand" href="../">
-      <span class="tea-mark">茶</span>
-      <span>茶馆<span class="tea-brand-sub">JerryTeahouse</span></span>
-    </a>
-    <nav class="tea-nav">
-      <a href="../">主页</a>
-      <a href="./" class="is-active">帖子中心</a>
-      <a href="../new/">写帖子</a>
-      <span class="tea-auth-slot" data-tea-auth></span>
-      <a href="#" id="themeBtn" title="切换明暗">🌙</a>
-    </nav>
-  </div>
-</header>
+      // 列表渲染完成后才揭晓页面（配合 boot.js 的 HOLD 机制，避免进入时闪现空白/旧内容）
+      function revealOnce() {
+        if (window.__xlRevealed) return;
+        window.__xlRevealed = true;
+        if (typeof window.__xlReveal === 'function') window.__xlReveal();
+      }
+      function initialAvatar(login) {
+        var ch = (login || '?').charAt(0).toUpperCase();
+        var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#28599c"/><stop offset="1" stop-color="#0078d4"/></linearGradient></defs><rect width="64" height="64" rx="32" fill="url(#g)"/><text x="32" y="42" font-size="30" font-family="Arial,sans-serif" fill="#fff" text-anchor="middle">' + ch + '</text></svg>';
+        return 'data:image/svg+xml,' + encodeURIComponent(svg);
+      }
+      var toastEl = document.getElementById('toast');
+      var sortBar = document.getElementById('sortBar');
+      var topicBar = document.getElementById('topicBar');
+      var topicFilter = document.getElementById('topicFilter');
+      var tfLabel = document.getElementById('tfLabel');
+      var tfClear = document.getElementById('tfClear');
+      var meLogin = null;
+      var meIsAdmin = false;
 
-<main class="tea-wrap">
+      // ---- 话题：URL 参数 ?topic=xxx ----
+      function urlWith(updates) {
+        var sp = new URLSearchParams(location.search);
+        Object.keys(updates || {}).forEach(function (k) {
+          if (updates[k] == null) sp.delete(k); else sp.set(k, updates[k]);
+        });
+        var q = sp.toString();
+        return location.pathname + (q ? '?' + q : '');
+      }
+      function filterByTopic(list) {
+        if (!curTopic) return list;
+        var want = String(curTopic).toLowerCase();
+        return list.filter(function (p) {
+          var ts = Array.isArray(p.topics) ? p.topics : [];
+          return ts.some(function (t) { return String(t).toLowerCase() === want; });
+        });
+      }
+      function applyTopicFilter() {
+        if (!topicFilter || !tfLabel) return;
+        if (curTopic) {
+          tfLabel.textContent = '#' + curTopic;
+          topicFilter.hidden = false;
+        } else {
+          topicFilter.hidden = true;
+        }
+      }
+      if (tfClear) {
+        tfClear.addEventListener('click', function () {
+          curTopic = null;
+          history.replaceState({}, '', urlWith({ topic: null }));
+          applyTopicFilter();
+          renderAndBind(allPosts, curCounts);
+          loadTopicBar();
+        });
+      }
+      function loadTopicBar() {
+        if (!topicBar) return;
+        fetch('/api/topics').then(function (r) { return r.ok ? r.json() : { topics: [] }; })
+          .then(function (d) { return d.topics || []; })
+          .catch(function () { return []; })
+          .then(function (topics) {
+            topicBar.innerHTML = '';
+            if (!topics.length) {
+              topicBar.innerHTML = '<span class="topic-empty">还没有话题，发帖时用 #话题 就能创建。</span>';
+              return;
+            }
+            var all = document.createElement('button');
+            all.type = 'button';
+            all.className = 'topic-chip' + (curTopic ? '' : ' active');
+            all.textContent = '全部';
+            all.addEventListener('click', function () {
+              if (!curTopic) return;
+              curTopic = null;
+              history.replaceState({}, '', urlWith({ topic: null }));
+              applyTopicFilter();
+              renderAndBind(allPosts, curCounts);
+              loadTopicBar();
+            });
+            topicBar.appendChild(all);
+            topics.slice(0, 12).forEach(function (t) {
+              var chip = document.createElement('button');
+              chip.type = 'button';
+              chip.className = 'topic-chip' + (curTopic && curTopic.toLowerCase() === String(t.name).toLowerCase() ? ' active' : '');
+              chip.textContent = '#' + t.name + ' ' + t.count;
+              chip.addEventListener('click', function () {
+                curTopic = t.name;
+                history.replaceState({}, '', urlWith({ topic: t.name }));
+                applyTopicFilter();
+                renderAndBind(allPosts, curCounts);
+                loadTopicBar();
+              });
+              topicBar.appendChild(chip);
+            });
+          });
+      }
 
-  <section class="tea-hero" style="padding-bottom:14px">
-    <h1>帖子中心</h1>
-    <p>所有帖子都在这儿，按最新或最热排。</p>
-  </section>
+      // 排布方式切换：从新到旧 / 关注优先
+      var sortHint = document.getElementById('sortHint');
+      var SORT_HINTS = {
+        new: { zh: '站内所有帖子，按发布时间从新到旧排列。', en: 'All posts, newest first.' },
+        follow: { zh: '已关注的帖子排在最前，其余按发布时间从新到旧排列。', en: 'Followed posts first, then newest.' },
+        hot: { zh: '按互动热度排序（点赞×2 + 收藏 + 评论）。', en: 'Sorted by engagement (likes×2 + favorites + comments).' }
+      };
+      function applySortHint() {
+        if (!sortHint) return;
+        var h = SORT_HINTS[sortMode] || SORT_HINTS.new;
+        sortHint.textContent = h.zh;
+        sortHint.setAttribute('data-zh', h.zh);
+        sortHint.setAttribute('data-en', h.en);
+      }
+      if (sortBar) {
+        Array.prototype.forEach.call(sortBar.querySelectorAll('.sort-tab'), function (tab) {
+          tab.addEventListener('click', function () {
+            sortMode = tab.getAttribute('data-mode') || 'new';
+            Array.prototype.forEach.call(sortBar.querySelectorAll('.sort-tab'), function (t) {
+              t.classList.toggle('active', t === tab);
+            });
+            applySortHint();
+            renderAndBind(allPosts, curCounts);
+          });
+        });
+      }
 
-  <hr class="tea-rule" />
+      // ---- 弹层元素 ----
+      var overlay = document.getElementById('postModal');
+      var mPost = document.getElementById('mPost');
+      var mComments = document.getElementById('mComments');
+      var mEmpty = document.getElementById('mEmpty');
+      var mComposer = document.getElementById('mComposer');
+      var mLoginHint = document.getElementById('mLoginHint');
+      var mReplyNote = document.getElementById('mReplyNote');
+      var mBody = document.getElementById('mBody');
+      var mSend = document.getElementById('mSend');
+      var mMentionPop = document.getElementById('mMentionPop');
+      var modalClose = document.getElementById('modalClose');
 
-  <div class="tea-toolbar">
-    <div class="tea-tabs" id="tabs">
-      <button class="tea-tab is-active" data-tab="all" type="button">全部</button>
-      <button class="tea-tab" data-tab="latest" type="button">最新</button>
-      <button class="tea-tab" data-tab="hot" type="button">热门</button>
-    </div>
-    <span class="tea-spacer"></span>
-    <button class="btn btn-ghost btn-sm" id="demoBtn" type="button">看看示例布局</button>
-    <a class="btn btn-tea btn-sm" href="../new/">泡一壶新茶</a>
-  </div>
+      function toast(msg, isErr) {
+        toastEl.textContent = msg;
+        toastEl.className = 'toast show' + (isErr ? ' err' : '');
+        setTimeout(function () { toastEl.className = 'toast' + (isErr ? ' err' : ''); }, 2600);
+      }
+      function fmtTime(ts) {
+        try { return new Date(ts).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; }
+      }
+      function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+      function linkify(s){
+        return esc(s).replace(/@([A-Za-z0-9-]+)/g, function(_,u){
+          return '<a class="mention" href="/profile/?user='+encodeURIComponent(u)+'">@'+u+'</a>';
+        });
+      }
 
-  <div class="tea-demo-flag">以下是<strong>示例排版</strong>（非真实帖子），用于预览茶馆风格。接入后端后这里会显示真实帖子。</div>
+      var FORBIDDEN = ['fuck','shit','bitch','asshole','bastard','dick','cunt','whore','slut','nigger','faggot','retard','tranny','nazi','kill yourself','kys','傻逼','sb','草泥马','操你','日你','妈的','贱人','婊子','杂种','滚蛋','废青','支那','洋奴','汉奸','狗杂种','加微信','扫码领','免费送','刷单','博彩','赌博','色情','裸聊','办证','代开发票','点击领取','一元购','日赚','月入过万','私聊客服'];
+      function findForbidden(t){ if(!t) return null; var low=String(t).toLowerCase(); for(var i=0;i<FORBIDDEN.length;i++){ if(low.indexOf(FORBIDDEN[i].toLowerCase())!==-1) return FORBIDDEN[i]; } return null; }
 
-  <div id="listWrap">
-    <div class="tea-list" id="postList"></div>
-  </div>
+      var states = {};
+      var blockedSet = new Set();
+      var pollsMap = {};
+      var reactsMap = {};
+      var allPosts = [];
+      var curCounts = {};
+      var sortMode = 'new'; // 'new' = 从新到旧, 'follow' = 关注优先
+      var curTopic = null;  // 当前话题筛选（来自 ?topic=）
+      var curPostId = null, replyTo = null, replyToLogin = null;
 
-</main>
+      function render(posts, counts) {
+        listEl.innerHTML = '';
+        if (!posts.length) {
+          emptyEl.hidden = false;
+          emptyEl.textContent = curTopic
+            ? '话题 #' + curTopic + ' 下还没有帖子。'
+            : '还没有帖子，去发布第一条吧。';
+          return;
+        }
+        emptyEl.hidden = true;
+        posts.forEach(function (p) {
+          if (blockedSet.has(p.id)) {
+            var blk = document.createElement('div'); blk.className = 'post-blocked';
+            blk.innerHTML = '<span class="pb-text">已屏蔽此帖</span>' +
+              '<button class="pa-btn pa-unblock" type="button" data-id="' + p.id + '">取消屏蔽</button>';
+            blk.querySelector('.pa-unblock').addEventListener('click', function () {
+              XLPostActions.unblockPost(p.id, { toast: toast }).then(function (res) {
+                if (res && res.ok) { blockedSet.delete(p.id); if (states[p.id]) states[p.id].blocked = false; renderAndBind(posts, counts); }
+              });
+            });
+            listEl.appendChild(blk);
+            return;
+          }
+          var card = document.createElement('div'); card.className = 'post post-card clickable'; card.dataset.id = p.id;
+          var avatar = 'https://github.com/' + encodeURIComponent(p.login) + '.png';
+          var canDel = meIsAdmin || (meLogin && p.login === meLogin);
+          var canEdit = meLogin && p.login === meLogin;
+          var edit = canEdit ? '<a class="del edit-link" href="/new/?edit=' + encodeURIComponent(p.id) + '">编辑</a>' : '';
+          var del = canDel ? '<button class="del" data-id="' + p.id + '">删除</button>' : '';
+          var cnt = (counts && counts[p.id]) || 0;
+          var st = states[p.id] || {};
+          var lc = (st && st.likeCount) || 0;
+          var repostLine = p.repostOf
+            ? '<div class="repost-tag"><span class="rt-label">转发自</span> <a href="/profile/?user=' + encodeURIComponent(p.repostLogin) + '">@' + esc(p.repostLogin) + '</a>：<a href="/post/?post=' + encodeURIComponent(p.repostOf) + '">' + esc(p.repostTitle || '（无标题）') + '</a></div>'
+            : '';
+          card.innerHTML =
+            '<div class="head">' +
+              '<img class="avatar" src="' + avatar + '" alt="" onerror="this.onerror=null;this.src=initialAvatar(\'' + p.login + '\')">' +
+              '<a class="author" href="/profile/?user=' + encodeURIComponent(p.login) + '">@' + esc(p.login) + '</a>' +
+              '<span class="meta">' + fmtTime(p.ts) + '</span>' +
+            '</div>' +
+            repostLine +
+            '<h3><a class="ptitle" href="/post/?post=' + encodeURIComponent(p.id) + '"></a></h3>' +
+            '<div class="post-body"></div>' +
+            '<div class="att-wrap"></div>' +
+            '<div class="att-poll" id="poll-' + p.id + '" hidden></div>' +
+            '<div class="att-react" id="react-' + p.id + '" hidden></div>' +
+            '<div class="post-foot">' +
+              '<span class="foot-spacer"></span>' +
+              '<button class="foot-btn comment-btn" type="button" data-id="' + p.id + '" title="评论">' +
+                '<img class="ico" src="/icons/comment.svg" alt="评论"><span class="cnt">' + cnt + '</span>' +
+              '</button>' +
+              '<button class="foot-btn like-btn' + (st && st.liked ? ' on' : '') + '" type="button" data-id="' + p.id + '" title="点赞">' +
+                '<img class="ico" src="/icons/' + (st && st.liked ? 'like-on' : 'like') + '.svg" alt="点赞"><span class="like-count">' + lc + '</span>' +
+              '</button>' +
+            '</div>' +
+            '<div class="post-actions" data-post="' + p.id + '"></div>' + edit + del +
+            '<div class="inline-comments" data-post="' + p.id + '">' +
+              '<div class="ic-list"></div>' +
+              '<button class="ic-expand" type="button" hidden data-zh="展开评论" data-en="Expand comments">展开评论</button>' +
+            '</div>';
+          card.querySelector('.ptitle').textContent = p.title || '（无标题）';
+          var bodyEl = card.querySelector('.post-body');
+          bodyEl.innerHTML = p.body || '';
+          if (window.XLTopics) window.XLTopics.linkify(bodyEl);
+          var hasText = !!(p.body && p.body.trim());
+          var attWrap = card.querySelector('.att-wrap');
+          if (attWrap) attWrap.innerHTML = XLMedia.build(p.files, { videoOnly: XLMedia.isVideoOnly(p.files, hasText) });
+          if (canDel) {
+            card.querySelector('.del').addEventListener('click', function (e) { e.stopPropagation(); delPost(p.id); });
+          }
+          if (canEdit) {
+            var editLink = card.querySelector('.edit-link');
+            if (editLink) editLink.addEventListener('click', function (e) { e.stopPropagation(); });
+          }
+          // 点击标题 / 评论按钮：在帖子中心内打开查看；点赞按钮独立处理
+          card.querySelector('.ptitle').addEventListener('click', function (e) { e.preventDefault(); openPost(p.id); });
+          card.querySelector('.comment-btn').addEventListener('click', function (e) { e.preventDefault(); openPost(p.id); });
+          card.querySelector('.like-btn').addEventListener('click', function (e) { e.stopPropagation(); toggleLike(p, this); });
+          listEl.appendChild(card);
+        });
+        if (typeof window.applyAll === 'function') window.applyAll();
+      }
 
-<footer class="tea-footer">
-  <div>茶馆 · JerryTeahouse —— 慢慢来，比较快。</div>
-  <div style="margin-top:6px">© <span id="yr"></span> Jerry · <a href="https://mc-creator-jerry-webpage.pages.dev/">小蓝页</a></div>
-</footer>
+      // ---- 帖子卡片内嵌评论：默认折叠，只显示点赞最高的 2 条 ----
+      function renderInlineComment(c, postId) {
+        var el = document.createElement('div'); el.className = 'inline-comment';
+        var avatar = 'https://github.com/' + encodeURIComponent(c.login) + '.png';
+        el.innerHTML =
+          '<img class="ic-avatar" src="' + avatar + '" alt="" onerror="this.onerror=null;this.src=initialAvatar(\'' + c.login + '\')">' +
+          '<div class="ic-main">' +
+            '<div class="ic-row1">' +
+              '<a class="ic-author" href="/profile/?user=' + encodeURIComponent(c.login) + '">@' + esc(c.login) + '</a>' +
+              '<span class="ic-time">' + fmtTime(c.ts) + '</span>' +
+            '</div>' +
+            '<div class="ic-text"></div>' +
+            '<div class="ic-actions">' +
+              '<button class="ic-like' + (c.liked ? ' on' : '') + '" data-id="' + c.id + '" title="点赞">' +
+                '<span>' + (c.liked ? '♥' : '♡') + '</span> ' + (c.likeCount || 0) +
+              '</button>' +
+            '</div>' +
+          '</div>';
+        el.querySelector('.ic-text').innerHTML = linkify(c.body);
+        var likeBtn = el.querySelector('.ic-like');
+        if (likeBtn) {
+          likeBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            toggleInlineLike(postId, c.id, likeBtn);
+          });
+        }
+        el.addEventListener('click', function (e) {
+          if (e.target.closest('a') || e.target.closest('button')) return;
+          openPost(postId);
+        });
+        return el;
+      }
+      function loadInlineComments(posts) {
+        posts.forEach(function (p) {
+          if (blockedSet.has(p.id)) return;
+          var container = listEl.querySelector('.inline-comments[data-post="' + p.id + '"]');
+          if (!container) return;
+          var icList = container.querySelector('.ic-list');
+          var expandBtn = container.querySelector('.ic-expand');
+          icList.innerHTML = '';
+          expandBtn.hidden = true;
+          fetch('/api/comment?post=' + encodeURIComponent(p.id))
+            .then(function (r) { return r.ok ? r.json() : { comments: [] }; })
+            .then(function (d) {
+              var list = (d.comments || []).slice();
+              if (!list.length) { container.hidden = true; return; }
+              container.hidden = false;
+              // 按点赞数降序，同赞按时间新到旧
+              list.sort(function (a, b) {
+                var la = a.likeCount || 0, lb = b.likeCount || 0;
+                if (lb !== la) return lb - la;
+                return (b.ts || 0) - (a.ts || 0);
+              });
+              var top2 = list.slice(0, 2);
+              var rest = list.slice(2);
+              top2.forEach(function (c) { icList.appendChild(renderInlineComment(c, p.id)); });
+              if (rest.length) {
+                var restWrap = document.createElement('div');
+                restWrap.className = 'ic-rest ic-collapsed';
+                rest.forEach(function (c) { restWrap.appendChild(renderInlineComment(c, p.id)); });
+                icList.appendChild(restWrap);
+                expandBtn.hidden = false;
+                expandBtn.textContent = '展开其余 ' + rest.length + ' 条评论';
+                expandBtn.onclick = function (e) {
+                  e.stopPropagation();
+                  var collapsed = restWrap.classList.contains('ic-collapsed');
+                  restWrap.classList.toggle('ic-collapsed');
+                  expandBtn.textContent = collapsed ? '收起评论' : '展开其余 ' + rest.length + ' 条评论';
+                };
+              }
+            })
+            .catch(function () { container.hidden = true; });
+        });
+      }
+      function toggleInlineLike(postId, cid, btn) {
+        if (!meLogin) { toast('请先登录', true); if (window.JW_LOGIN) window.JW_LOGIN(); return; }
+        btn.disabled = true;
+        var action = btn.classList.contains('on') ? 'unlike' : 'like';
+        fetch('/api/comment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ post: postId, id: cid, action: action })
+        }).then(function (r) { return r.ok ? r.json() : { error: 'net' }; })
+          .then(function (res) {
+            btn.disabled = false;
+            if (res.ok) {
+              var liked = action === 'like';
+              btn.classList.toggle('on', liked);
+              btn.innerHTML = '<span>' + (liked ? '♥' : '♡') + '</span> ' + (res.likeCount || 0);
+            } else if (res.error === 'unauthorized') { toast('请先登录', true); }
+            else { toast('操作失败', true); }
+          })
+          .catch(function () { btn.disabled = false; toast('网络错误', true); });
+      }
 
-<script>
-(function () {
-  var listEl = document.getElementById('postList');
-  var wrapEl = document.getElementById('listWrap');
-  document.getElementById('yr').textContent = new Date().getFullYear();
+      function hotScore(p) {
+        var st = states[p.id] || {};
+        var comments = (curCounts && curCounts[p.id]) || 0;
+        return (st.likeCount || 0) * 2 + (st.favCount || 0) + comments;
+      }
+      function sortPosts(list) {
+        var arr = list.slice();
+        if (sortMode === 'follow') {
+          arr.sort(function (a, b) {
+            var fa = (states[a.id] && states[a.id].followed) ? 1 : 0;
+            var fb = (states[b.id] && states[b.id].followed) ? 1 : 0;
+            if (fa !== fb) return fb - fa;            // 已关注的排前面
+            return (b.ts || 0) - (a.ts || 0);        // 同组内从新到旧
+          });
+        } else if (sortMode === 'hot') {
+          arr.sort(function (a, b) {
+            var sa = hotScore(a), sb = hotScore(b);
+            if (sb !== sa) return sb - sa;            // 热度高的排前面
+            return (b.ts || 0) - (a.ts || 0);        // 同热度按新到旧
+          });
+        } else {
+          arr.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+        }
+        return arr;
+      }
 
-  var themeBtn = document.getElementById('themeBtn');
-  function syncThemeIcon() { themeBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'; }
-  themeBtn.addEventListener('click', function (e) {
-    e.preventDefault();
-    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    try { localStorage.setItem('tea_theme', next); } catch (err) {}
-    syncThemeIcon();
-  });
-  syncThemeIcon();
+      function renderAndBind(posts, counts) {
+        curCounts = counts || {};
+        var sorted = sortPosts(filterByTopic(posts));
+        render(sorted, curCounts);
+        sorted.forEach(function (p) {
+          if (blockedSet.has(p.id)) return;
+          var el = listEl.querySelector('.post-actions[data-post="' + p.id + '"]');
+          if (el) XLPostActions.initBar(el, p.id, states[p.id] || {}, {
+            loggedIn: !!meLogin,
+            toast: toast,
+            authorLogin: p.login,
+            onBlock: function (postId, blocked) {
+              if (blocked) blockedSet.add(postId); else blockedSet.delete(postId);
+              if (states[postId]) states[postId].blocked = blocked;
+              renderAndBind(posts, counts);
+            },
+            onFollow: function (postId, followed) {
+              if (states[postId]) states[postId].followed = followed;
+              renderAndBind(posts, counts);
+            }
+          });
+          var pbox = listEl.querySelector('.att-poll[id="poll-' + p.id + '"]');
+          if (pbox && pollsMap[p.id] && window.XLPoll) {
+            window.XLPoll.render(pbox, Object.assign({}, pollsMap[p.id], { post: p.id }), { compact: true, canManage: false });
+          }
+          var rbox = listEl.querySelector('.att-react[id="react-' + p.id + '"]');
+          if (rbox && reactsMap[p.id] && window.XLReactions) {
+            window.XLReactions.render(rbox, Object.assign({}, reactsMap[p.id], { post: p.id }), { compact: true });
+          }
+        });
+        loadInlineComments(sorted);
+      }
 
-  var DEMO = [
-    { id: 'demo-1', title: '为什么我开了一间「茶馆」', excerpt: '小蓝页是我的客厅，热闹、什么都有；茶馆想更安静一点，只留帖子，慢慢写、慢慢看。', author: 'Jerry', when: '2 小时前', tags: ['随笔', '站点'], likes: 12, comments: 3 },
-    { id: 'demo-2', title: '把「帖子中心」独立出来的取舍', excerpt: '同源最省事，但独立站点才像一间自己的屋子。跨域登录用 OAuth 授权码走服务端，就不受 Cookie 限制。', author: 'Jerry', when: '昨天', tags: ['技术', '架构'], likes: 27, comments: 8 },
-    { id: 'demo-3', title: '第一泡：茶馆配色笔记', excerpt: '暖木色打底，茶绿点睛，剩下交给留白。颜色少一点，呼吸感就多一点。', author: 'Jerry', when: '3 天前', tags: ['设计'], likes: 19, comments: 5 }
-  ];
+      function load() {
+        // 话题筛选：支持 ?topic=xxx 直接进入
+        curTopic = new URLSearchParams(location.search).get('topic') || null;
+        applyTopicFilter();
+        loadTopicBar();
+        fetch('/api/post')
+          .then(function (r) { return r.ok ? r.json() : { posts: [] }; })
+          .then(function (d) {
+            var posts = d.posts || [];
+            allPosts = posts;
+            if (!posts.length) { render(posts, {}); revealOnce(); return; }
+            var ids = posts.map(function (p) { return p.id; });
+            fetch('/api/comment/counts?posts=' + encodeURIComponent(ids.join(',')))
+              .then(function (r) { return r.ok ? r.json() : { counts: {} }; })
+              .then(function (c) { return c.counts || {}; })
+              .catch(function () { return {}; })
+              .then(function (counts) {
+                return XLPostActions.getStates(ids).then(function (s) {
+                  states = s || {};
+                  blockedSet = new Set(ids.filter(function (id) { return states[id] && states[id].blocked; }));
+                }).then(function () {
+                  return fetch('/api/poll?posts=' + encodeURIComponent(ids.join(',')))
+                    .then(function (r) { return r.ok ? r.json() : { polls: {} }; })
+                    .then(function (pd) { pollsMap = (pd && pd.polls) || {}; })
+                    .catch(function () { pollsMap = {}; });
+                }).then(function () {
+                  return fetch('/api/react?posts=' + encodeURIComponent(ids.join(',')))
+                    .then(function (r) { return r.ok ? r.json() : { reacts: {} }; })
+                    .then(function (rd) { reactsMap = (rd && rd.reacts) || {}; })
+                    .catch(function () { reactsMap = {}; });
+                }).then(function () {
+                  renderAndBind(posts, counts);
+                  maybeOpenFromUrl();
+                  revealOnce();
+                });
+              });
+          })
+          .catch(function () { render([], {}); revealOnce(); });
+      }
 
-  function escapeHtml(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-  function cardHtml(p) {
-    var tags = (p.tags || []).map(function (t) { return '<span class="tag">#' + escapeHtml(t) + '</span>'; }).join('');
-    return '' +
-      '<a class="post-card" href="../post/?id=' + encodeURIComponent(p.id) + '">' +
-        '<h3>' + escapeHtml(p.title) + '</h3>' +
-        '<p class="post-excerpt">' + escapeHtml(p.excerpt) + '</p>' +
-        '<div class="post-meta">' +
-          '<span class="who"><img class="post-avatar" alt="" src="../assets/avatar.svg" />' + escapeHtml(p.author || '匿名') + '</span>' +
-          '<span>' + escapeHtml(p.when || '') + '</span>' +
-          '<span class="post-stats"><span>♡ ' + (p.likes || 0) + '</span><span>💬 ' + (p.comments || 0) + '</span></span>' +
-          '<span class="post-tags">' + tags + '</span>' +
-        '</div>' +
-      '</a>';
-  }
+      // 从 bfcache 返回时刷新列表（避免展示旧内容）
+      window.addEventListener('pageshow', function (e) {
+        if (e.persisted) { try { load(); } catch (_) {} }
+      });
 
-  function renderEmpty() {
-    wrapEl.innerHTML =
-      '<div class="tea-empty"><div class="tea-empty-mark">茶</div>' +
-      '<h3>茶馆还很安静</h3><p>还没有帖子。等水烧开，写下第一泡。</p>' +
-      '<a class="btn btn-tea" href="../new/">泡一壶新茶</a></div>';
-  }
-  function render(posts) {
-    listEl.innerHTML = posts.map(cardHtml).join('');
-    wrapEl.innerHTML = '';
-    wrapEl.appendChild(listEl);
-  }
+      function toggleLike(p, btn) {
+        if (!meLogin) { toast('请先登录', true); if (window.JW_LOGIN) window.JW_LOGIN(); return; }
+        var st = states[p.id] || {};
+        var action = st.liked ? 'unlike' : 'like';
+        btn.disabled = true;
+        fetch('/api/post-actions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ post: p.id, action: action })
+        }).then(function (r) { return r.ok ? r.json() : { error: 'net' }; })
+          .then(function (res) {
+            btn.disabled = false;
+            if (res && res.ok) {
+              st.liked = res.liked; st.likeCount = res.likeCount;
+              btn.classList.toggle('on', !!res.liked);
+              var c = btn.querySelector('.like-count'); if (c) c.textContent = res.likeCount;
+              var ic = btn.querySelector('img.ico'); if (ic) ic.src = '/icons/' + (res.liked ? 'like-on' : 'like') + '.svg';
+            } else if (res && res.error === 'unauthorized') { toast('请先登录', true); }
+            else { toast('操作失败', true); }
+          })
+          .catch(function () { btn.disabled = false; toast('网络错误', true); });
+      }
 
-  var demoOn = false;
-  document.getElementById('demoBtn').addEventListener('click', function () {
-    demoOn = !demoOn;
-    document.body.classList.toggle('is-demo', demoOn);
-    this.textContent = demoOn ? '隐藏示例布局' : '看看示例布局';
-    if (demoOn) render(DEMO); else load();
-  });
+      function delPost(id) {
+        if (!confirm('确定删除这条帖子？')) return;
+        fetch('/api/post?id=' + encodeURIComponent(id), { method: 'DELETE' })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+          .then(function (res) { if (res.ok) { toast('已删除 ✓'); closeModal(); load(); } else { toast('删除失败', true); } })
+          .catch(function () { toast('删除失败（网络错误）', true); });
+      }
 
-  document.getElementById('tabs').addEventListener('click', function (e) {
-    var b = e.target.closest('.tea-tab'); if (!b) return;
-    [].forEach.call(this.querySelectorAll('.tea-tab'), function (x) { x.classList.remove('is-active'); });
-    b.classList.add('is-active');
-    load(b.dataset.tab);
-  });
+      // ===================== 弹层：在帖子中心内查看帖子 + 评论 =====================
+      var openedViaPush = false;
+      function openPost(id) {
+        curPostId = id;
+        overlay.hidden = false;
+        document.body.classList.add('modal-open');
+        replyTo = null; replyToLogin = null;
+        if (location.search.indexOf('post=') === -1) {
+          history.pushState({ post: id }, '', urlWith({ post: id }));
+          openedViaPush = true;
+        } else {
+          history.replaceState({ post: id }, '', urlWith({ post: id }));
+        }
+        loadModalPost();
+        loadModalComments();
+      }
+      function closeModal() {
+        overlay.hidden = true;
+        document.body.classList.remove('modal-open');
+        curPostId = null; replyTo = null; replyToLogin = null;
+        if (openedViaPush) { openedViaPush = false; history.back(); }
+        else { history.replaceState({}, '', urlWith({ post: null })); }
+      }
+      modalClose.addEventListener('click', closeModal);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !overlay.hidden) closeModal(); });
+      window.addEventListener('popstate', function () {
+        var sp = new URLSearchParams(location.search);
+        var p = sp.get('post');
+        var t = sp.get('topic') || '';
+        if (t !== (curTopic || '')) {
+          curTopic = t || null;
+          applyTopicFilter();
+          renderAndBind(allPosts, curCounts);
+        }
+        if (p && p !== curPostId) { openPost(p); }
+        else if (!p && !overlay.hidden) { overlay.hidden = true; document.body.classList.remove('modal-open'); curPostId = null; openedViaPush = false; }
+      });
+      function maybeOpenFromUrl() {
+        var p = new URLSearchParams(location.search).get('post');
+        if (p) openPost(p);
+      }
+      document.getElementById('mLoginLink').addEventListener('click', function (e) {
+        e.preventDefault(); if (window.JW_LOGIN) window.JW_LOGIN(); else location.href = '/';
+      });
 
-  function load(tab) {
-    if (demoOn) return;
-    var url = '../api/post' + (tab && tab !== 'all' ? ('?sort=' + encodeURIComponent(tab)) : '');
-    fetch(url, { credentials: 'same-origin' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        var posts = (d && d.posts) || [];
-        if (!posts.length) renderEmpty(); else render(posts);
-      })
-      .catch(function () { renderEmpty(); });
-  }
-  load();
-})();
-</script>
+      function loadModalPost() {
+        var p = allPosts.find(function (x) { return x.id === curPostId; });
+        if (!p) {
+          fetch('/api/post').then(function (r){return r.ok?r.json():{posts:[]};}).then(function (d){
+            p = (d.posts||[]).find(function(x){return x.id===curPostId;});
+            if (p) renderModalPost(p); else { mPost.innerHTML = '<p class="hint">帖子不存在或已被删除。</p>'; mPost.hidden = false; }
+          }).catch(function(){ mPost.innerHTML = '<p class="hint">加载失败。</p>'; mPost.hidden = false; });
+          return;
+        }
+        renderModalPost(p);
+      }
+      function renderModalPost(p) {
+        var st = (states[p.id] || {});
+        var avatar = 'https://github.com/' + encodeURIComponent(p.login) + '.png';
+        var canDel = meIsAdmin || (meLogin && p.login === meLogin);
+        var canEdit = meLogin && p.login === meLogin;
+        var del = canDel ? '<button class="del" id="mDelPost">删除帖子</button>' : '';
+        mPost.innerHTML =
+          '<div class="head">' +
+            '<img class="avatar" src="' + avatar + '" alt="" onerror="this.onerror=null;this.src=initialAvatar(\'' + p.login + '\')">' +
+            '<a class="author" href="/profile/?user=' + encodeURIComponent(p.login) + '">@' + esc(p.login) + '</a>' +
+            '<span class="meta">' + fmtTime(p.ts) + '</span>' +
+          '</div>' +
+          '<h1 style="font-size:1.5rem;line-height:1.35;margin:10px 0;word-break:break-word"></h1><div class="post-body" style="font-size:1.02rem;line-height:1.8;color:var(--text)"></div><div class="att-wrap"></div><div class="att-poll" id="mPoll" hidden></div><div class="att-react" id="mReact" hidden></div>' +
+          '<div class="post-actions" id="mPostActions" data-post="' + p.id + '"></div>' +
+          '<div class="post-foot" style="margin-top:10px">' +
+            '<span class="foot-spacer"></span>' +
+            '<button class="foot-btn comment-btn" id="mCommentBtn" type="button" data-id="' + p.id + '" title="评论">' +
+              '<img class="ico" src="/icons/comment.svg" alt="评论"><span class="like-count" id="mCommentCnt">' + (st.commentCount || 0) + '</span>' +
+            '</button>' +
+            '<button class="foot-btn like-btn' + (st.liked ? ' on' : '') + '" id="mLikeBtn" type="button" data-id="' + p.id + '" title="点赞">' +
+              '<img class="ico" src="/icons/' + (st.liked ? 'like-on' : 'like') + '.svg" alt="点赞"><span class="like-count">' + (st.likeCount || 0) + '</span>' +
+            '</button>' +
+          '</div>' + del + (canEdit ? '<button class="pa-btn poll-add-btn" id="mAddPollBtn" hidden>添加投票</button>' : '');
+        mPost.querySelector('h1').textContent = p.title || '（无标题）';
+        var mBody = mPost.querySelector('.post-body');
+        mBody.innerHTML = p.body || '';
+        if (window.XLTopics) window.XLTopics.linkify(mBody);
+        var mHasText = !!(p.body && p.body.trim());
+        var mAtt = mPost.querySelector('.att-wrap');
+        if (mAtt) mAtt.innerHTML = XLMedia.build(p.files, { videoOnly: XLMedia.isVideoOnly(p.files, mHasText) });
+        mPost.hidden = false;
+        if (canDel) document.getElementById('mDelPost').addEventListener('click', function () { delPost(p.id); });
+        if (st.blocked) { mPost.querySelector('#mPostActions').innerHTML = '<span class="hint">你已屏蔽此帖。</span>'; return; }
+        XLPostActions.initBar(document.getElementById('mPostActions'), p.id, st, {
+          loggedIn: !!meLogin,
+          toast: toast,
+          authorLogin: p.login,
+          onBlock: function (postId, blocked) { if (states[postId]) states[postId].blocked = blocked; if (blocked) { mPost.querySelector('#mPostActions').innerHTML = '<span class="hint">你已屏蔽此帖。</span>'; } else { loadModalPost(); } }
+        });
+        loadModalPoll(p, canEdit);
+        loadModalReactions(p);
+        var mLike = document.getElementById('mLikeBtn');
+        if (mLike) mLike.addEventListener('click', function () { toggleLike(p, this); });
+        var mCommentBtn = document.getElementById('mCommentBtn');
+        if (mCommentBtn) mCommentBtn.addEventListener('click', function () {
+          if (mComposer.hidden) { toast('评论需要登录', true); return; }
+          mComposer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          mBody.focus();
+        });
+      }
+
+      function loadModalPoll(p, canEdit) {
+        var box = document.getElementById('mPoll');
+        if (!box || !window.XLPoll) return;
+        fetch('/api/poll?post=' + encodeURIComponent(p.id))
+          .then(function (r) { return r.ok ? r.json() : { error: 'none' }; })
+          .then(function (d) {
+            if (d && !d.error && d.question) {
+              window.XLPoll.render(box, Object.assign({}, d, { post: p.id }), {
+                canManage: !!canEdit,
+                onDeleted: function () { var b = document.getElementById('mAddPollBtn'); if (b) b.hidden = false; }
+              });
+            } else if (canEdit) {
+              var addBtn = document.getElementById('mAddPollBtn');
+              if (addBtn) {
+                addBtn.hidden = false;
+                addBtn.onclick = function () {
+                  addBtn.hidden = true;
+                  window.XLPoll.renderComposer(box, p.id, function () { loadModalPoll(p, canEdit); });
+                };
+              }
+            }
+          })
+          .catch(function () {});
+      }
+
+      function loadModalReactions(p) {
+        var box = document.getElementById('mReact');
+        if (!box || !window.XLReactions) return;
+        fetch('/api/react?post=' + encodeURIComponent(p.id))
+          .then(function (r) { return r.ok ? r.json() : { reactions: {}, mine: [] }; })
+          .then(function (d) { window.XLReactions.render(box, Object.assign({}, d, { post: p.id }), {}); })
+          .catch(function () {});
+      }
+
+      function renderModalComments(list) {
+        mComments.innerHTML = '';
+        if (!list.length) { mEmpty.hidden = false; return; }
+        mEmpty.hidden = true;
+        list.forEach(function (c) {
+          var avatar = 'https://github.com/' + encodeURIComponent(c.login) + '.png';
+          var row = document.createElement('div'); row.className = 'comment';
+          var canDel = meIsAdmin || (meLogin && c.login === meLogin);
+          row.innerHTML =
+            '<img class="avatar" src="' + avatar + '" alt="" onerror="this.onerror=null;this.src=initialAvatar(\'' + c.login + '\')">' +
+            '<div class="body-wrap">' +
+              '<div class="row1">' +
+                '<a class="author" href="/profile/?user=' + encodeURIComponent(c.login) + '">@' + esc(c.login) + '</a>' +
+                '<span class="time">' + fmtTime(c.ts) + '</span>' +
+              '</div>' +
+              (c.replyTo ? '<div class="reply-to" data-zh="回复" data-en="replied">回复</div>' : '') +
+              '<div class="text"></div>' +
+              '<div class="actions">' +
+                '<button class="act reply" data-id="' + c.id + '" data-login="' + esc(c.login) + '" data-zh="回复" data-en="Reply">回复</button>' +
+                (canDel ? '<button class="act del" data-id="' + c.id + '">删除</button>' : '') +
+              '</div>' +
+            '</div>';
+          row.querySelector('.text').innerHTML = linkify(c.body);
+          row.querySelector('.reply').addEventListener('click', function () { startReply(c.id, c.login); });
+          var delBtn = row.querySelector('.act.del');
+          if (delBtn) delBtn.addEventListener('click', function () { delModalComment(c.id); });
+          mComments.appendChild(row);
+        });
+        var mc = document.getElementById('mCommentCnt');
+        if (mc) mc.textContent = list.length;
+      }
+      function loadModalComments() {
+        fetch('/api/comment?post=' + encodeURIComponent(curPostId))
+          .then(function (r) { return r.ok ? r.json() : { comments: [] }; })
+          .then(function (d) { renderModalComments(d.comments || []); })
+          .catch(function () { renderModalComments([]); });
+      }
+      function delModalComment(id) {
+        if (!confirm('确定删除这条评论？')) return;
+        fetch('/api/comment?post=' + encodeURIComponent(curPostId) + '&id=' + encodeURIComponent(id), { method: 'DELETE' })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+          .then(function (res) { if (res.ok) { toast('已删除 ✓'); loadModalComments(); } else { toast('删除失败', true); } })
+          .catch(function () { toast('删除失败（网络错误）', true); });
+      }
+
+      function startReply(id, login) {
+        replyTo = id; replyToLogin = login;
+        mReplyNote.hidden = false;
+        mReplyNote.innerHTML = '回复 <b>@' + esc(login) + '</b><span class="cancel" id="mCancelReply" data-zh="取消" data-en="Cancel">取消</span>';
+        document.getElementById('mCancelReply').addEventListener('click', cancelReply);
+        if (mBody.value && !/(\s|^)@/.test(mBody.value)) mBody.value = mBody.value.replace(/\s*$/, ' ');
+        mBody.value = mBody.value.replace(/(^|\s)@([A-Za-z0-9-]*)$/, '$1') + '@' + login + ' ';
+        mBody.focus();
+      }
+      function cancelReply() { replyTo = null; replyToLogin = null; mReplyNote.hidden = true; mReplyNote.innerHTML = ''; }
+
+      function sendComment() {
+        var body = mBody.value.trim();
+        if (!body) { toast('评论不能为空', true); return; }
+        var w = findForbidden(body);
+        if (w) { toast('含违禁词：「' + w + '」', true); return; }
+        mSend.disabled = true;
+        fetch('/api/comment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ post: curPostId, body: body, replyTo: replyTo })
+        }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+          .then(function (res) {
+            mSend.disabled = false;
+            if (res.ok) { mBody.value = ''; cancelReply(); hideMention(); toast('已发表 ✓'); loadModalComments(); }
+            else if (res.body && res.body.error === 'unauthorized') { toast('请先登录', true); }
+            else if (res.body && res.body.error === 'forbidden') { toast('服务器拦截：含违禁词「' + (res.body.word || '') + '」', true); }
+            else if (res.body && res.body.error === 'post_not_found') { toast('帖子不存在', true); }
+            else { toast('发表失败', true); }
+          })
+          .catch(function () { mSend.disabled = false; toast('发表失败（网络错误）', true); });
+      }
+
+      // ---- @ 提及自动补全（弹层内） ----
+      var mentionItems = [], mentionActive = -1;
+      function onModalInput() {
+        var m = /(^|\s)@([A-Za-z0-9-]*)$/.exec(mBody.value);
+        if (m) {
+          fetch('/api/users?q=' + encodeURIComponent(m[2]))
+            .then(function (r) { return r.ok ? r.json() : { users: [] }; })
+            .then(function (d) { showMention(d.users || []); })
+            .catch(function () { hideMention(); });
+        } else hideMention();
+        if (typeof window.autoGrow === 'function') window.autoGrow(mBody);
+      }
+      function showMention(users) {
+        if (!users.length) { hideMention(); return; }
+        mentionItems = users.slice(0, 6); mentionActive = -1; mMentionPop.innerHTML = '';
+        mentionItems.forEach(function (u, i) {
+          var el = document.createElement('div'); el.className = 'mi';
+          el.innerHTML = '<img src="' + (u.avatar || '') + '" onerror="this.onerror=null;this.src=initialAvatar(\'' + u.login + '\')"><span class="ml">@' + esc(u.login) + '</span><span class="mn">' + esc(u.name || '') + '</span>';
+          el.addEventListener('mousedown', function (e) { e.preventDefault(); pickMention(u.login); });
+          mMentionPop.appendChild(el);
+        });
+        var rect = mBody.getBoundingClientRect();
+        mMentionPop.style.left = rect.left + 'px';
+        mMentionPop.style.top = (window.scrollY + rect.bottom + 4) + 'px';
+        mMentionPop.style.display = 'block';
+      }
+      function hideMention() { mMentionPop.style.display = 'none'; mentionItems = []; mentionActive = -1; }
+      function pickMention(login) {
+        mBody.value = mBody.value.replace(/(^|\s)@([A-Za-z0-9-]*)$/, '$1@' + login + ' ');
+        hideMention(); mBody.focus();
+      }
+      mBody.addEventListener('input', onModalInput);
+      mBody.addEventListener('keydown', function (e) {
+        if (mMentionPop.style.display === 'block' && mentionItems.length) {
+          if (e.key === 'ArrowDown') { e.preventDefault(); mentionActive = (mentionActive + 1) % mentionItems.length; updateActive(); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); mentionActive = (mentionActive - 1 + mentionItems.length) % mentionItems.length; updateActive(); }
+          else if (e.key === 'Enter' && mentionActive >= 0) { e.preventDefault(); pickMention(mentionItems[mentionActive].login); }
+          else if (e.key === 'Escape') { hideMention(); }
+        }
+      });
+      function updateActive() {
+        Array.prototype.forEach.call(mMentionPop.children, function (el, i) { el.classList.toggle('active', i === mentionActive); });
+      }
+      mSend.addEventListener('click', sendComment);
+
+      fetch('/api/me').then(function (r) { return r.ok ? r.json() : null; }).then(function (me) {
+        if (me && me.login) { meLogin = me.login; meIsAdmin = !!me.isAdmin; mComposer.hidden = false; }
+        else { mLoginHint.hidden = false; }
+        load();
+      }).catch(function () { mLoginHint.hidden = false; load(); });
+    })();
+  </script>
 </body>
 </html>
+
