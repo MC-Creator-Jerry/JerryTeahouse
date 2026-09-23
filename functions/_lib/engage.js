@@ -11,7 +11,7 @@
 //   2) 帖子维度的计数快照写入专用 key `engage:<postId>`，作为展示权威源；
 //   3) 快照缺失或损坏时，按用户列表惰性重建（自愈，无需手工迁移脚本）。
 //
-// 【存储布局】KV namespace 绑定 USER_PREFS
+// 【存储布局】KV namespace 绑定 TEAHOUSE_KV（茶馆自有）
 //   likes:post:<id>      -> [login,...]          点赞用户（状态权威源）
 //   followers:post:<id>  -> [login,...]          关注该帖的用户（状态权威源）
 //   fav:<login>          -> [postId,...]         用户收藏夹（状态权威源）
