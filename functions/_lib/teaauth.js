@@ -94,6 +94,28 @@ export function sessionProfile(sess) {
   };
 }
 
+// 用户目录（users:index）：帖子/评论/@提及 按 login 取昵称与头像。
+// 每次 SSO 登录时顺手刷新一次（站长改昵称/头像后重登即同步）。
+export async function upsertUser(kv, u) {
+  if (!kv || !u || !u.login) return;
+  try {
+    const raw = await kv.get('users:index');
+    let idx = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(idx)) idx = [];
+    const i = idx.findIndex(function (x) { return x && x.login === u.login; });
+    const prev = i >= 0 ? idx[i] : {};
+    const rec = {
+      login: u.login,
+      name: u.name || prev.name || u.login,
+      bio: prev.bio || '',
+      avatar: u.avatar || prev.avatar || ''
+    };
+    if (i >= 0) idx[i] = Object.assign({}, prev, rec); else idx.unshift(rec);
+    if (idx.length > 300) idx.length = 300;
+    await kv.put('users:index', JSON.stringify(idx));
+  } catch (e) { /* 用户目录失败不影响登录 */ }
+}
+
 export async function readJson(req) {
   try {
     const ct = req.headers.get('content-type') || '';
