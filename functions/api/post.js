@@ -71,8 +71,11 @@ export async function onRequestGet(context) {
     const out = list.filter((p) => p.login === login && p.status === 'draft').map((p) => publicView(p, list));
     return json({ posts: out });
   }
-  // 公开列表（仅已发布）
-  const safe = list.filter((p) => p.status !== 'draft').map((p) => publicView(p, list));
+  // 公开列表（仅已发布）：置顶帖排最前，其余按时间倒序
+  const safe = list
+    .filter((p) => p.status !== 'draft')
+    .map((p) => publicView(p, list))
+    .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.ts || 0) - (a.ts || 0));
   return json({ posts: safe });
 }
 
