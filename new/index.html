@@ -120,8 +120,8 @@
       <a href="/">主页</a>
       <a href="/posts/">帖子中心</a>
       <a href="/new/" class="is-active">写帖子</a>
-      <span class="tea-auth-slot" data-tea-auth></span>
       <a href="#" id="themeBtn" title="切换明暗">🌙</a>
+      <span class="tea-auth-slot" data-tea-auth></span>
     </nav>
   </div>
 </header>
@@ -194,6 +194,7 @@
         <input type="file" id="pFiles" multiple hidden />
         <div class="att-list" id="attList"></div>
       </div>
+      <p class="edit-note" id="quotaTip" hidden></p>
       <button class="post-btn" id="postBtn" data-zh="发布" data-en="Publish">发布</button>
       <button class="post-btn secondary" id="draftBtn" data-zh="保存草稿" data-en="Save draft">保存草稿</button>
     </section>
@@ -351,6 +352,31 @@
       var editId = new URLSearchParams(location.search).get('edit');
       var repostId = new URLSearchParams(location.search).get('repost');
 
+      // ===== 每日发帖额度提示（普通 10 / 茶馆升级 +10 / 管理员不限） =====
+      var quotaTip = document.getElementById('quotaTip');
+      var quotaState = { limit: null, used: 0, plus: false, unlimited: false };
+      function renderQuota() {
+        if (!quotaTip) return;
+        if (quotaState.unlimited) { quotaTip.hidden = false; quotaTip.textContent = '你是不限额用户，尽情发帖 🍵'; return; }
+        if (quotaState.limit == null) { quotaTip.hidden = true; return; }
+        var left = Math.max(0, quotaState.limit - quotaState.used);
+        quotaTip.hidden = false;
+        quotaTip.textContent = '今日已发 ' + quotaState.used + ' / ' + quotaState.limit + ' 篇（剩余 ' + left + ' 篇）'
+          + (quotaState.plus ? ' · 含「茶馆·发布功能升级」+10' : '');
+        if (!editId) {
+          var reached = left <= 0;
+          postBtn.disabled = reached;
+          postBtn.title = reached ? '今日发帖已达上限' : '';
+        }
+      }
+      function loadQuota() {
+        fetch('/api/post?quota=1').then(function (r) { return r.ok ? r.json() : null; }).then(function (q) {
+          if (!q || !q.ok) return;
+          quotaState = { limit: q.limit, used: q.used || 0, plus: !!q.plus, unlimited: !!q.unlimited };
+          renderQuota();
+        }).catch(function () {});
+      }
+
       function post(status) {
         var title = pTitle.value.trim();
         var html = pBody.innerHTML.trim();
@@ -398,6 +424,11 @@
             else if (res.body && res.body.error === 'unauthorized') { toast('请先登录', true); }
             else if (res.body && res.body.error === 'forbidden') { toast('服务器拦截：含违禁词「' + (res.body.word || '') + '」', true); }
             else if (res.body && res.body.error === 'rate_limited') { toast('操作过快，请稍后再试', true); }
+            else if (res.body && res.body.error === 'daily_limit') {
+              quotaState = { limit: res.body.limit, used: res.body.used || res.body.limit, plus: !!res.body.plus, unlimited: false };
+              renderQuota();
+              toast('今日发帖已达上限（' + res.body.limit + ' 篇/天），明天再来；开通「茶馆·发布功能升级」可 +10', true);
+            }
             else if (res.body && res.body.error === 'not_found') { toast('帖子不存在或已被删除', true); }
             else { toast(isEdit ? '更新失败' : '发布失败', true); }
           })
@@ -445,7 +476,7 @@
 
       fetch('/api/me').then(function (r) { return r.ok ? r.json() : null; }).then(function (me) {
           if (me && me.login) {
-            formCard.hidden = false; updateCount();
+            formCard.hidden = false; updateCount(); loadQuota();
             if (editId) loadForEdit();
             else if (repostId) loadForRepost();
           }
