@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>设置 · 茶馆</title>
+<meta name="description" content="茶馆设置：个人资料、外观、账户与管理员入口。" />
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+<link rel="stylesheet" href="/assets/teahouse.css" />
+<link rel="stylesheet" href="/assets/editbar.css" />
+<script src="/assets/teahouse.js" defer></script>
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('tea_theme');
+      if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+  })();
+</script>
+</head>
+<body>
+
+<header class="tea-header">
+  <div class="tea-header-inner">
+    <a class="tea-brand" href="/">
+      <span class="tea-mark">茶</span>
+      <span>茶馆<span class="tea-brand-sub">JerryTeahouse</span></span>
+    </a>
+    <nav class="tea-nav">
+      <a href="/">主页</a>
+      <a href="/posts/">帖子中心</a>
+      <a href="/new/">写帖子</a>
+      <span class="tea-auth-slot" data-tea-auth></span>
+      <a href="#" id="themeBtn" title="切换明暗">🌙</a>
+    </nav>
+  </div>
+</header>
+
+<main class="tea-wrap">
+
+  <h1 style="font-size:1.7rem;margin:0 0 6px">设置</h1>
+  <p style="color:var(--muted);margin:0">茶馆里的个人偏好与账户信息。资料会同步到你在帖子与评论里显示的名字。</p>
+
+  <section class="tea-panel" id="gatePanel" hidden>
+    <h2>请先登录</h2>
+    <p class="sub">设置与个人资料需要用小蓝页账户登录后才能修改。</p>
+    <button class="btn btn-tea" data-tea-login type="button">登录</button>
+  </section>
+
+  <div id="settingsBody" hidden>
+
+    <section class="tea-panel">
+      <h2>个人资料</h2>
+      <p class="sub">这里改的是「茶馆里的你」，不会动小蓝页上的资料。</p>
+      <div class="profile-head" style="margin-bottom:18px">
+        <span class="profile-avatar" id="avaPreview">茶</span>
+        <div class="profile-meta">
+          <h1 id="whoName">—</h1>
+          <span class="login" id="whoLogin"></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="fAvatar">头像地址</label>
+        <input type="url" id="fAvatar" placeholder="https://…（留空则用小蓝页头像或首字母）" />
+        <span class="hint">支持 https 图片地址；也可以点下面按钮直接用 GitHub 头像。</span>
+        <div class="chips" style="margin-top:8px">
+          <button class="chip" type="button" id="useGhAva">用 GitHub 头像</button>
+          <button class="chip" type="button" id="clearAva">清空头像</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="fName">昵称</label>
+        <input type="text" id="fName" maxlength="24" placeholder="在茶馆里显示的名字" />
+        <span class="hint">最多 24 字。</span>
+      </div>
+
+      <div class="field">
+        <label for="fBio">个人简介</label>
+        <textarea id="fBio" maxlength="200" placeholder="随便写点，比如：爱喝乌龙，写代码也写字。"></textarea>
+        <span class="hint">最多 200 字。</span>
+      </div>
+
+      <div class="field">
+        <label for="fSite">个人站点</label>
+        <input type="url" id="fSite" placeholder="https://…（可选）" />
+      </div>
+
+      <div class="tea-form-foot">
+        <button class="btn btn-tea" type="button" id="saveBtn">保存资料</button>
+        <span class="tea-hint" id="saveHint"></span>
+      </div>
+    </section>
+
+    <section class="tea-panel">
+      <h2>外观</h2>
+      <p class="sub">只影响你这台设备。</p>
+      <div class="chips" id="themeChips">
+        <button class="chip" type="button" data-theme-opt="light">☀️ 浅色</button>
+        <button class="chip" type="button" data-theme-opt="dark">🌙 深色</button>
+        <button class="chip" type="button" data-theme-opt="auto">🖥 跟随系统</button>
+      </div>
+    </section>
+
+    <section class="tea-panel">
+      <h2>账户</h2>
+      <p class="sub">茶馆用的是小蓝页账户（单点登录），两边数据各自独立。</p>
+      <table class="tea-table">
+        <tbody>
+          <tr><th>登录方式</th><td id="acctProvider">—</td></tr>
+          <tr><th>登录名</th><td id="acctLogin">—</td></tr>
+          <tr><th>加入茶馆</th><td id="acctJoined">—</td></tr>
+          <tr><th>小蓝页</th><td><a href="https://mc-creator-jerry-webpage.pages.dev/personal_profile/" target="_blank" rel="noopener">去小蓝页看/改账户资料 ↗</a></td></tr>
+        </tbody>
+      </table>
+      <div class="tea-form-foot" style="margin-top:16px">
+        <a class="btn" href="/profile/">查看我的主页</a>
+        <button class="btn" type="button" data-tea-logout>退出登录</button>
+      </div>
+    </section>
+
+    <section class="tea-panel" data-tea-admin hidden>
+      <h2>管理员</h2>
+      <p class="sub">你是茶馆管理员：可以删帖删评论、置顶、封禁用户。站主（小蓝页 isAdmin）在茶馆自动拥有管理员权限。</p>
+      <div class="tea-form-foot">
+        <a class="btn btn-tea" href="/admin/">进入管理台</a>
+      </div>
+    </section>
+
+  </div>
+
+</main>
+
+<footer class="tea-footer">
+  <div>茶馆 · JerryTeahouse —— 慢慢来，比较快。</div>
+  <div style="margin-top:6px">© <span id="yr"></span> Jerry · <a href="https://mc-creator-jerry-webpage.pages.dev/">小蓝页</a></div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  function api(url, opts) {
+    return fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {}))
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, body: j }; }); });
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function toast(msg, kind) {
+    if (window.TeaAuth && window.TeaAuth.notify) window.TeaAuth.notify(msg, kind);
+  }
+  function fallbackAva() { /* 见 fillAva */ }
+  function initialSpan(t, id) {
+    var s = document.createElement('span');
+    s.className = 'profile-avatar';
+    if (id) s.id = id;
+    s.textContent = String(t || '茶').slice(0, 1);
+    return s;
+  }
+
+  var originAva = '';   // 服务端当前的最终头像（含兜底），用于「清空」
+  var me = null;
+
+  function fillAva(url, login, name) {
+    var box = document.getElementById('avaPreview');
+    if (!box) return;
+    var next;
+    if (/^(https?:\/\/|\/)/.test(url || '')) {
+      next = document.createElement('img');
+      next.className = 'profile-avatar';
+      next.alt = '';
+      next.src = url;
+      next.onerror = function () { next.replaceWith(initialSpan(name || login || '茶', 'avaPreview')); };
+    } else {
+      next = initialSpan(name || login || '茶', 'avaPreview');
+    }
+    next.id = 'avaPreview';
+    box.replaceWith(next);
+  }
+
+  /* ---- 主题 chips ---- */
+  function syncThemeChips() {
+    var cur = document.documentElement.getAttribute('data-theme');
+    var saved = null;
+    try { saved = localStorage.getItem('tea_theme'); } catch (e) {}
+    document.querySelectorAll('[data-theme-opt]').forEach(function (b) {
+      var opt = b.getAttribute('data-theme-opt');
+      var on = (opt === 'auto') ? !saved : (saved === opt);
+      b.classList.toggle('is-on', on);
+    });
+    if (!saved && window.matchMedia) {
+      var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    }
+  }
+  document.getElementById('themeChips').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-theme-opt]');
+    if (!b) return;
+    var opt = b.getAttribute('data-theme-opt');
+    try {
+      if (opt === 'auto') localStorage.removeItem('tea_theme');
+      else localStorage.setItem('tea_theme', opt);
+    } catch (err) {}
+    var next = opt;
+    if (opt === 'auto') {
+      next = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', next);
+    var btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
+    syncThemeChips();
+  });
+
+  /* ---- 载入 ---- */
+  function load() {
+    api('/api/profile').then(function (res) {
+      if (!res.ok) {
+        document.getElementById('gatePanel').hidden = false;
+        return;
+      }
+      var p = res.body.profile || {};
+      me = p;
+      originAva = p.avatar || '';
+      document.getElementById('settingsBody').hidden = false;
+      document.getElementById('acctProvider').textContent = '小蓝页账户（SSO）';
+      document.getElementById('acctLogin').textContent = p.login || '—';
+      document.getElementById('acctJoined').textContent = p.joined ? new Date(p.joined).toLocaleDateString('zh-CN') : '—';
+      document.getElementById('fName').value = p.name || '';
+      document.getElementById('fBio').value = p.bio || '';
+      document.getElementById('fSite').value = p.site || '';
+      document.getElementById('fAvatar').value = (p.avatar && /^https?:/.test(p.avatar) && p.avatar.indexOf('github.com') === -1) ? p.avatar : (p.avatar || '');
+      document.getElementById('whoLogin').textContent = '@' + (p.login || '');
+      document.getElementById('whoName').textContent = p.name || p.login || '';
+      fillAva(p.avatar || originAva, p.login, p.name);
+      if (res.body.isAdmin) {
+        document.querySelectorAll('[data-tea-admin]').forEach(function (el) { el.hidden = false; });
+      }
+    }).catch(function () { toast('设置加载失败，请刷新重试'); });
+  }
+
+  document.getElementById('useGhAva').addEventListener('click', function () {
+    if (!me || !me.login) return;
+    document.getElementById('fAvatar').value = 'https://github.com/' + encodeURIComponent(me.login) + '.png';
+    fillAva(document.getElementById('fAvatar').value, me.login, me.name);
+  });
+  document.getElementById('clearAva').addEventListener('click', function () {
+    document.getElementById('fAvatar').value = '';
+    fillAva('', me && me.login, me && me.name);
+  });
+  document.getElementById('fAvatar').addEventListener('input', function () {
+    fillAva(this.value.trim(), me && me.login, me && me.name);
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', function () {
+    var btn = this;
+    var payload = {
+      name: document.getElementById('fName').value,
+      bio: document.getElementById('fBio').value,
+      avatar: document.getElementById('fAvatar').value,
+      site: document.getElementById('fSite').value
+    };
+    btn.disabled = true;
+    document.getElementById('saveHint').textContent = '保存中…';
+    api('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (res) {
+      btn.disabled = false;
+      if (res.ok) {
+        document.getElementById('saveHint').textContent = '已保存 ✓';
+        document.getElementById('whoName').textContent = res.body.profile.name;
+        me = res.body.profile;
+        toast('资料已保存 ✓');
+      } else {
+        var map = { empty_name: '昵称不能为空', bad_name: '昵称里有非法字符', bad_avatar: '头像地址不合法', bad_site: '站点地址要以 http/https 开头', rate_limited: '改得太快了，稍后再试', forbidden: '含违禁词' };
+        document.getElementById('saveHint').textContent = map[res.body.error] || '保存失败';
+        toast(map[res.body.error] || '保存失败', 'err');
+      }
+    }).catch(function () {
+      btn.disabled = false;
+      document.getElementById('saveHint').textContent = '网络错误';
+    });
+  });
+
+  syncThemeChips();
+  if (window.TeaAuth && window.TeaAuth.onChange) window.TeaAuth.onChange(function () { load(); });
+  else document.addEventListener('tea-auth-ready', function () { load(); });
+})();
+</script>
+</body>
+</html>
