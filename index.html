@@ -7,6 +7,7 @@
 <meta name="description" content="茶馆 JerryTeahouse —— 一间慢慢泡茶、慢慢写字的小茶室。" />
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
 <link rel="stylesheet" href="assets/teahouse.css" />
+<link rel="stylesheet" href="/assets/editbar.css" />
 <script src="/assets/teahouse.js" defer></script>
 <script>
   (function () {
@@ -93,16 +94,7 @@
 (function () {
   document.getElementById('yr').textContent = new Date().getFullYear();
 
-  var themeBtn = document.getElementById('themeBtn');
-  function syncThemeIcon() { themeBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙'; }
-  themeBtn.addEventListener('click', function (e) {
-    e.preventDefault();
-    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    try { localStorage.setItem('tea_theme', next); } catch (err) {}
-    syncThemeIcon();
-  });
-  syncThemeIcon();
+  // 明暗切换逻辑已统一到 assets/teahouse.js（本页只放 #themeBtn，不自己绑定）
 
   var DEMO = [
     { id: 'demo-1', title: '为什么我开了一间「茶馆」', excerpt: '小蓝页是我的客厅，热闹、什么都有；茶馆想更安静一点，只留帖子，慢慢写、慢慢看。', author: 'Jerry', when: '2 小时前', tags: ['随笔', '站点'], likes: 12, comments: 3 },
