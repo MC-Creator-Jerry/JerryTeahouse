@@ -190,7 +190,7 @@
       <p class="topic-tip">用 <b>#话题</b> 可以给帖子打话题标签，例如「今天聊聊 #人工智能 」，发布后点话题即可看同话题的帖子。</p>
       <label class="edit-label" for="pFiles" data-zh="附件" data-en="Attachments">附件</label>
       <div class="att-uploader">
-        <button type="button" class="att-add-btn" id="attAddBtn" data-zh="＋ 添加文件（视频 / 图片 / 音频 / 文档，单文件 ≤ 20MB）" data-en="Add files (video/image/audio/doc, ≤20MB each)">＋ 添加文件（视频 / 图片 / 音频 / 文档，单文件 ≤ 20MB）</button>
+        <button type="button" class="att-add-btn" id="attAddBtn" data-zh="＋ 添加文件（支持全部格式：图片 / 视频 / 音频 / 文档 / 压缩包 / 程序…，单文件 ≤ 20MB）" data-en="Add files (any format, ≤20MB each)">＋ 添加文件（支持全部格式：图片 / 视频 / 音频 / 文档 / 压缩包 / 程序…，单文件 ≤ 20MB）</button>
         <input type="file" id="pFiles" multiple hidden />
         <div class="att-list" id="attList"></div>
       </div>
@@ -223,6 +223,7 @@
   })();
 </script>
   <script src="/assets/tea-compat.js"></script>
+  <script src="/assets/editor-m365.js" defer></script>
   
   <script>
     (function () {
