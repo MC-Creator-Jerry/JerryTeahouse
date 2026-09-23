@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>个人主页 · 茶馆</title>
+<meta name="description" content="茶馆个人主页：资料、帖子与统计。" />
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+<link rel="stylesheet" href="/assets/teahouse.css" />
+<link rel="stylesheet" href="/assets/editbar.css" />
+<script src="/assets/teahouse.js" defer></script>
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('tea_theme');
+      if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+  })();
+</script>
+</head>
+<body>
+
+<header class="tea-header">
+  <div class="tea-header-inner">
+    <a class="tea-brand" href="/">
+      <span class="tea-mark">茶</span>
+      <span>茶馆<span class="tea-brand-sub">JerryTeahouse</span></span>
+    </a>
+    <nav class="tea-nav">
+      <a href="/">主页</a>
+      <a href="/posts/">帖子中心</a>
+      <a href="/new/">写帖子</a>
+      <span class="tea-auth-slot" data-tea-auth></span>
+      <a href="#" id="themeBtn" title="切换明暗">🌙</a>
+    </nav>
+  </div>
+</header>
+
+<main class="tea-wrap">
+
+  <section class="tea-panel" id="needLogin" hidden>
+    <h2>先登录才能看个人主页</h2>
+    <p class="sub">茶馆用小蓝页账户登录。登录后这里会显示你的资料、帖子与统计。</p>
+    <button class="btn btn-tea" type="button" data-tea-login>登录</button>
+  </section>
+
+  <section class="tea-panel" id="notFound" hidden>
+    <h2>没有这个茶客</h2>
+    <p class="sub">可能是链接里的用户名写错了，或者对方还没在茶馆露过面。</p>
+    <a class="btn" href="/posts/">去帖子中心看看</a>
+  </section>
+
+  <div id="profileBody" hidden>
+
+    <section class="tea-panel">
+      <div class="profile-head">
+        <span class="profile-avatar" id="pAva">茶</span>
+        <div class="profile-meta">
+          <h1 id="pName">—</h1>
+          <span class="login" id="pLogin"></span>
+          <p class="bio" id="pBio"></p>
+          <span class="login" id="pSiteWrap" hidden><a id="pSite" target="_blank" rel="noopener"></a></span>
+          <span class="login" id="pJoined"></span>
+        </div>
+        <div style="margin-left:auto" class="tea-form-foot" id="pActions"></div>
+      </div>
+    </section>
+
+    <section class="tea-panel">
+      <h2>数据</h2>
+      <p class="sub">帖子数只统计已发布的；评论与获赞按最近 30 帖汇总。</p>
+      <div class="stat-grid">
+        <div class="stat"><b id="sPosts">0</b><span>帖子</span></div>
+        <div class="stat"><b id="sComments">0</b><span>评论</span></div>
+        <div class="stat"><b id="sLikes">0</b><span>获赞</span></div>
+        <div class="stat" id="statDraft" hidden><b id="sDrafts">0</b><span>草稿</span></div>
+      </div>
+    </section>
+
+    <section class="tea-panel">
+      <h2 id="postsHead">帖子</h2>
+      <div class="tea-list" id="postList" style="margin-top:14px"></div>
+      <div class="empty-note" id="postEmpty" hidden>还没有发布过帖子。</div>
+    </section>
+
+  </div>
+
+</main>
+
+<footer class="tea-footer">
+  <div>茶馆 · JerryTeahouse —— 慢慢来，比较快。</div>
+  <div style="margin-top:6px">© <span id="yr"></span> Jerry · <a href="https://mc-creator-jerry-webpage.pages.dev/">小蓝页</a></div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  function api(url, opts) {
+    return fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {}))
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, body: j }; }); });
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function toast(msg, kind) { if (window.TeaAuth && window.TeaAuth.notify) window.TeaAuth.notify(msg, kind); }
+  function stripHtml(s) { return String(s == null ? '' : s).replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function timeAgo(ts) {
+    var n = Number(ts) || 0;
+    if (!n) return '';
+    var d = Math.floor((Date.now() - n) / 1000);
+    if (d < 60) return '刚刚';
+    if (d < 3600) return Math.floor(d / 60) + ' 分钟前';
+    if (d < 86400) return Math.floor(d / 3600) + ' 小时前';
+    if (d < 86400 * 7) return Math.floor(d / 86400) + ' 天前';
+    try { return new Date(n).toLocaleDateString('zh-CN'); } catch (e) { return ''; }
+  }
+  function initialSpan(t, id) {
+    var s = document.createElement('span');
+    s.className = 'profile-avatar';
+    if (id) s.id = id;
+    s.textContent = String(t || '茶').slice(0, 1);
+    return s;
+  }
+  function fillAva(url, login, name) {
+    var box = document.getElementById('pAva');
+    if (!box) return;
+    if (/^(https?:\/\/|\/)/.test(url || '')) {
+      var img = document.createElement('img');
+      img.className = 'profile-avatar';
+      img.id = 'pAva';
+      img.alt = '';
+      img.src = url;
+      img.onerror = function () { img.replaceWith(initialSpan(name || login, 'pAva')); };
+      box.replaceWith(img);
+    } else {
+      box.replaceWith(initialSpan(name || login, 'pAva'));
+    }
+  }
+
+  var wantUser = new URLSearchParams(location.search).get('user') || '';
+  var ctx = { profile: null, canAdmin: false, isMe: false };
+
+  function renderActions() {
+    var host = document.getElementById('pActions');
+    host.innerHTML = '';
+    var p = ctx.profile;
+    if (ctx.isMe) {
+      var a = document.createElement('a');
+      a.className = 'btn btn-tea';
+      a.href = '/settings/';
+      a.textContent = '编辑资料';
+      host.appendChild(a);
+      var b = document.createElement('a');
+      b.className = 'btn';
+      b.href = '/new/';
+      b.textContent = '写帖子';
+      host.appendChild(b);
+      return;
+    }
+    if (ctx.canAdmin) {
+      var ban = document.createElement('button');
+      ban.type = 'button';
+      ban.className = 'btn';
+      ban.textContent = '封禁该用户';
+      ban.addEventListener('click', doBan);
+      host.appendChild(ban);
+      var un = document.createElement('button');
+      un.type = 'button';
+      un.className = 'btn';
+      un.textContent = '解除封禁';
+      un.addEventListener('click', function () { adminAction({ action: 'unban', login: p.login }, '已解除封禁'); });
+      host.appendChild(un);
+    }
+  }
+
+  function doBan() {
+    var p = ctx.profile;
+    var hours = Number(window.prompt('封禁小时数（0 = 永久）：', '24'));
+    if (isNaN(hours)) return;
+    var reason = window.prompt('封禁原因（可留空）：', '') || '';
+    adminAction({ action: 'ban', login: p.login, hours: hours, reason: reason }, '已封禁 ' + p.login);
+  }
+
+  function adminAction(payload, okMsg) {
+    api('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      .then(function (res) {
+        if (res.ok) toast(okMsg);
+        else {
+          var map = { cannot_ban_self_or_owner: '不能封禁站主', cannot_ban_admin: '不能封禁管理员', forbidden: '没有管理员权限' };
+          toast(map[res.body.error] || '操作失败', 'err');
+        }
+      })
+      .catch(function () { toast('网络错误', 'err'); });
+  }
+
+  function cardHtml(p) {
+    var tags = (p.topics || []).map(function (t) { return '<span class="tag">#' + esc(t) + '</span>'; }).join('');
+    return '<a class="post-card" href="/post/?post=' + encodeURIComponent(p.id) + '">' +
+      '<h3>' + esc(p.title || '（无标题）') + '</h3>' +
+      '<p class="post-excerpt">' + esc(stripHtml(p.body).slice(0, 110)) + '</p>' +
+      '<div class="post-meta">' +
+        '<span>' + esc(timeAgo(p.ts)) + '</span>' +
+        '<span class="post-tags">' + tags + '</span>' +
+      '</div></a>';
+  }
+
+  function loadPosts(login) {
+    return api('/api/post').then(function (res) {
+      var all = (res.ok && res.body.posts) || [];
+      var mine = all.filter(function (p) { return p.login === login; });
+      var list = document.getElementById('postList');
+      document.getElementById('postsHead').textContent = (ctx.isMe ? '我的帖子' : 'Ta 的帖子') + '（' + mine.length + '）';
+      if (!mine.length) {
+        list.innerHTML = '';
+        document.getElementById('postEmpty').hidden = false;
+        return;
+      }
+      document.getElementById('postEmpty').hidden = true;
+      list.innerHTML = mine.map(cardHtml).join('');
+    });
+  }
+
+  function load() {
+    var url = wantUser ? ('/api/profile?user=' + encodeURIComponent(wantUser)) : '/api/profile';
+    api(url).then(function (res) {
+      if (res.status === 401) { document.getElementById('needLogin').hidden = false; return; }
+      if (!res.ok) { document.getElementById('notFound').hidden = false; return; }
+
+      var p = res.body.profile || {};
+      ctx.profile = p;
+      ctx.isMe = !!res.body.isMe;
+      ctx.canAdmin = !!res.body.canAdmin;
+
+      document.getElementById('profileBody').hidden = false;
+      document.getElementById('pName').textContent = p.name || p.login;
+      document.getElementById('pLogin').textContent = '@' + (p.login || '');
+      document.getElementById('pBio').textContent = p.bio || (ctx.isMe ? '还没写简介 —— 去设置里写一句吧。' : '这个茶客还没写简介。');
+      if (p.site) {
+        var w = document.getElementById('pSiteWrap');
+        var a = document.getElementById('pSite');
+        w.hidden = false;
+        a.href = p.site;
+        a.textContent = p.site;
+      }
+      document.getElementById('pJoined').textContent = p.joined ? ('加入于 ' + new Date(p.joined).toLocaleDateString('zh-CN')) : '';
+
+      var st = res.body.stats || {};
+      document.getElementById('sPosts').textContent = st.posts || 0;
+      document.getElementById('sComments').textContent = st.comments || 0;
+      document.getElementById('sLikes').textContent = st.likes || 0;
+      if (ctx.isMe && st.drafts) {
+        document.getElementById('statDraft').hidden = false;
+        document.getElementById('sDrafts').textContent = st.drafts;
+      }
+
+      document.title = (p.name || p.login) + ' · 茶馆';
+      fillAva(p.avatar, p.login, p.name);
+      renderActions();
+      return loadPosts(p.login);
+    }).catch(function () { toast('加载失败，请刷新重试', 'err'); });
+  }
+
+  if (window.TeaAuth && window.TeaAuth.onChange) window.TeaAuth.onChange(function () { load(); });
+  else document.addEventListener('tea-auth-ready', function () { load(); });
+})();
+</script>
+</body>
+</html>
