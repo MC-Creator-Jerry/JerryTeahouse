@@ -1,4 +1,4 @@
-// 通知 / 评论存储与解析辅助（KV: USER_PREFS）
+// 通知 / 评论存储与解析辅助（KV: TEAHOUSE_KV）
 // 三类通知：
 //   system  系统通知（广播，管理员发布）   -> notices:list / notices:seen:<login>
 //   message 消息通知（定向给某用户）       -> msg:<login> / msg:seen:<login>
