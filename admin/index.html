@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>管理台 · 茶馆</title>
+<meta name="description" content="茶馆管理台：帖子 / 评论 / 用户 / 封禁 / 管理员。" />
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+<link rel="stylesheet" href="/assets/teahouse.css" />
+<link rel="stylesheet" href="/assets/editbar.css" />
+<script src="/assets/teahouse.js" defer></script>
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('tea_theme');
+      if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+  })();
+</script>
+</head>
+<body>
+
+<header class="tea-header">
+  <div class="tea-header-inner">
+    <a class="tea-brand" href="/">
+      <span class="tea-mark">茶</span>
+      <span>茶馆<span class="tea-brand-sub">JerryTeahouse</span></span>
+    </a>
+    <nav class="tea-nav">
+      <a href="/">主页</a>
+      <a href="/posts/">帖子中心</a>
+      <a href="/new/">写帖子</a>
+      <span class="tea-auth-slot" data-tea-auth></span>
+      <a href="#" id="themeBtn" title="切换明暗">🌙</a>
+    </nav>
+  </div>
+</header>
+
+<main class="tea-wrap">
+
+  <h1 style="font-size:1.7rem;margin:0 0 6px">管理台</h1>
+  <p style="color:var(--muted);margin:0">删帖删评论、置顶、封禁与管理员授予。所有操作立即写入茶馆 KV。</p>
+
+  <section class="tea-panel" id="needLogin" hidden>
+    <h2>请先登录</h2>
+    <p class="sub">管理台需要管理员身份（站主账号登录后自动具备）。</p>
+    <button class="btn btn-tea" type="button" data-tea-login>登录</button>
+  </section>
+
+  <section class="tea-panel" id="noPerm" hidden>
+    <h2>没有管理员权限</h2>
+    <p class="sub">当前账号不是茶馆管理员。站长可在小蓝页授予，或由茶馆管理员在下面「管理员」里添加。</p>
+    <a class="btn" href="/">回主页</a>
+  </section>
+
+  <div id="adminBody" hidden>
+
+    <section class="tea-panel">
+      <h2>概览</h2>
+      <p class="sub">评论与用户数按茶馆 KV 现算，可能与帖子内计数略有出入（只统计最近 40 帖的评论）。</p>
+      <div class="stat-grid">
+        <div class="stat"><b id="kPosts">0</b><span>已发布</span></div>
+        <div class="stat"><b id="kDrafts">0</b><span>草稿</span></div>
+        <div class="stat"><b id="kPinned">0</b><span>置顶</span></div>
+        <div class="stat"><b id="kComments">0</b><span>评论</span></div>
+        <div class="stat"><b id="kUsers">0</b><span>用户</span></div>
+        <div class="stat"><b id="kBanned">0</b><span>封禁中</span></div>
+      </div>
+      <div class="tea-form-foot" style="margin-top:16px">
+        <button class="btn" type="button" id="refreshBtn">刷新数据</button>
+        <a class="btn" href="/posts/">去帖子中心</a>
+        <span class="tea-hint" id="meHint"></span>
+      </div>
+    </section>
+
+    <section class="tea-panel">
+      <h2>帖子</h2>
+      <p class="sub">置顶的帖子会排在帖子中心最前面。</p>
+      <table class="tea-table">
+        <thead><tr><th>标题</th><th>作者</th><th>时间</th><th>状态</th><th style="text-align:right">操作</th></tr></thead>
+        <tbody id="tblPosts"></tbody>
+      </table>
+      <div class="empty-note" id="postsEmpty" hidden>还没有帖子。</div>
+    </section>
+
+    <section class="tea-panel">
+      <h2>评论</h2>
+      <p class="sub">按时间倒序，最多显示 60 条。</p>
+      <table class="tea-table">
+        <thead><tr><th>内容</th><th>作者</th><th>所属帖子</th><th>时间</th><th style="text-align:right">操作</th></tr></thead>
+        <tbody id="tblComments"></tbody>
+      </table>
+      <div class="empty-note" id="commentsEmpty" hidden>还没有评论。</div>
+    </section>
+
+    <section class="tea-panel">
+      <h2>用户与权限</h2>
+      <p class="sub">站主（<span id="ownerName"></span>）永远是管理员，不可移除。封禁期间该用户不能再发帖/评论。</p>
+      <table class="tea-table">
+        <thead><tr><th>用户</th><th>帖子</th><th>身份</th><th style="text-align:right">操作</th></tr></thead>
+        <tbody id="tblUsers"></tbody>
+      </table>
+      <div class="empty-note" id="usersEmpty" hidden>用户目录还是空的（有人登录并发帖后就会出现）。</div>
+    </section>
+
+    <section class="tea-panel">
+      <h2>封禁中</h2>
+      <table class="tea-table">
+        <thead><tr><th>用户</th><th>原因</th><th>封禁时间</th><th>解封时间</th><th style="text-align:right">操作</th></tr></thead>
+        <tbody id="tblBans"></tbody>
+      </table>
+      <div class="empty-note" id="bansEmpty" hidden>当前没有被封禁的用户。</div>
+    </section>
+
+  </div>
+
+</main>
+
+<footer class="tea-footer">
+  <div>茶馆 · JerryTeahouse —— 慢慢来，比较快。</div>
+  <div style="margin-top:6px">© <span id="yr"></span> Jerry · <a href="https://mc-creator-jerry-webpage.pages.dev/">小蓝页</a></div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  function api(url, opts) {
+    return fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {}))
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, body: j }; }); });
+  }
+  function post(payload) {
+    return api('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function toast(msg, kind) { if (window.TeaAuth && window.TeaAuth.notify) window.TeaAuth.notify(msg, kind); }
+  function fmtDate(ts) { try { return new Date(ts).toLocaleString('zh-CN', { hour12: false }); } catch (e) { return '—'; } }
+  function btn(label, cls, fn) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'mini-btn' + (cls ? ' ' + cls : '');
+    b.textContent = label;
+    b.addEventListener('click', fn);
+    return b;
+  }
+  var errMap = {
+    forbidden: '没有管理员权限', not_found: '对象不存在', unauthorized: '登录已失效，请重新登录',
+    cannot_ban_self_or_owner: '不能封禁站主', cannot_ban_admin: '不能封禁管理员',
+    cannot_demote_self: '不能取消自己的管理员', owner_always_admin: '站主永远是管理员',
+    bad_params: '参数不完整', unknown_action: '未知操作'
+  };
+  function handle(res, okMsg) {
+    if (res.ok) { toast(okMsg); load(); return true; }
+    toast(errMap[res.body && res.body.error] || '操作失败', 'err');
+    return false;
+  }
+
+  var data = null;
+
+  function renderPosts() {
+    var tb = document.getElementById('tblPosts');
+    tb.innerHTML = '';
+    var list = data.posts || [];
+    document.getElementById('postsEmpty').hidden = !!list.length;
+    list.forEach(function (p) {
+      var tr = document.createElement('tr');
+      var td1 = document.createElement('td');
+      td1.innerHTML = (p.pinned ? '📌 ' : '') + '<a href="/post/?post=' + encodeURIComponent(p.id) + '">' + esc(p.title || '（无标题）') + '</a>';
+      var td2 = document.createElement('td');
+      td2.innerHTML = '<a href="/profile/?user=' + encodeURIComponent(p.login) + '">' + esc(p.login) + '</a>';
+      var td3 = document.createElement('td'); td3.textContent = fmtDate(p.ts);
+      var td4 = document.createElement('td'); td4.textContent = p.status === 'draft' ? '草稿' : '已发布';
+      var td5 = document.createElement('td'); td5.className = 'act';
+      td5.appendChild(btn(p.pinned ? '取消置顶' : '置顶', '', function () {
+        post({ action: 'pinPost', id: p.id, pinned: !p.pinned }).then(function (r) { handle(r, p.pinned ? '已取消置顶' : '已置顶'); });
+      }));
+      td5.appendChild(btn(p.status === 'draft' ? '发布' : '转草稿', '', function () {
+        post({ action: 'setStatus', id: p.id, status: p.status === 'draft' ? 'published' : 'draft' })
+          .then(function (r) { handle(r, '状态已更新'); });
+      }));
+      td5.appendChild(btn('删除', 'warn', function () {
+        if (!window.confirm('确定删除帖子「' + (p.title || '（无标题）') + '」？\n该帖的评论与附件会一并清除，不可恢复。')) return;
+        post({ action: 'delPost', id: p.id }).then(function (r) { handle(r, '帖子已删除'); });
+      }));
+      [td1, td2, td3, td4, td5].forEach(function (td) { tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderComments() {
+    var tb = document.getElementById('tblComments');
+    tb.innerHTML = '';
+    var list = (data.comments || []).slice(0, 60);
+    document.getElementById('commentsEmpty').hidden = !!list.length;
+    list.forEach(function (c) {
+      var tr = document.createElement('tr');
+      var td1 = document.createElement('td'); td1.textContent = c.body || '';
+      var td2 = document.createElement('td');
+      td2.innerHTML = '<a href="/profile/?user=' + encodeURIComponent(c.login) + '">' + esc(c.login) + '</a>';
+      var td3 = document.createElement('td');
+      td3.innerHTML = '<a href="/post/?post=' + encodeURIComponent(c.post) + '">' + esc(c.postTitle || c.post) + '</a>';
+      var td4 = document.createElement('td'); td4.textContent = fmtDate(c.ts);
+      var td5 = document.createElement('td'); td5.className = 'act';
+      td5.appendChild(btn('删除', 'warn', function () {
+        if (!window.confirm('删除这条评论？')) return;
+        post({ action: 'delComment', post: c.post, id: c.id }).then(function (r) { handle(r, '评论已删除'); });
+      }));
+      [td1, td2, td3, td4, td5].forEach(function (td) { tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderUsers() {
+    var tb = document.getElementById('tblUsers');
+    tb.innerHTML = '';
+    var list = data.users || [];
+    document.getElementById('usersEmpty').hidden = !!list.length;
+    var admins = data.admins || [];
+    list.forEach(function (u) {
+      var isOwner = u.login === data.owner;
+      var isAdmin = isOwner || admins.indexOf(u.login) !== -1;
+      var banned = (data.bans || []).some(function (b) { return b.login === u.login; });
+      var tr = document.createElement('tr');
+      var td1 = document.createElement('td');
+      td1.innerHTML = '<a href="/profile/?user=' + encodeURIComponent(u.login) + '">' + esc(u.name || u.login) + '</a>' +
+        '<span style="color:var(--muted)"> @' + esc(u.login) + '</span>';
+      var td2 = document.createElement('td'); td2.textContent = u.posts || 0;
+      var td3 = document.createElement('td');
+      td3.innerHTML = (isOwner ? '<span class="tag">站主</span> ' : '') +
+        (isAdmin ? '<span class="tag">管理员</span>' : '<span style="color:var(--muted)">普通茶客</span>') +
+        (banned ? ' <span class="tag" style="background:color-mix(in srgb,var(--danger) 18%,transparent);color:var(--danger)">封禁中</span>' : '');
+      var td4 = document.createElement('td'); td4.className = 'act';
+      if (!isOwner) {
+        if (!isAdmin) {
+          td4.appendChild(btn('设为管理员', '', function () {
+            if (!window.confirm('把 ' + u.login + ' 设为茶馆管理员？')) return;
+            post({ action: 'addAdmin', login: u.login }).then(function (r) { handle(r, '已授予管理员'); });
+          }));
+        } else {
+          td4.appendChild(btn('取消管理员', '', function () {
+            if (!window.confirm('取消 ' + u.login + ' 的管理员权限？')) return;
+            post({ action: 'removeAdmin', login: u.login }).then(function (r) { handle(r, '已取消管理员'); });
+          }));
+        }
+        if (banned) {
+          td4.appendChild(btn('解封', '', function () {
+            post({ action: 'unban', login: u.login }).then(function (r) { handle(r, '已解封'); });
+          }));
+        } else if (!isAdmin) {
+          td4.appendChild(btn('封禁', 'warn', function () {
+            var hours = Number(window.prompt('封禁 ' + u.login + ' 多少小时？（0 = 永久）', '24'));
+            if (isNaN(hours)) return;
+            var reason = window.prompt('封禁原因（可留空）：', '') || '';
+            post({ action: 'ban', login: u.login, hours: hours, reason: reason }).then(function (r) { handle(r, '已封禁'); });
+          }));
+        }
+      } else {
+        td4.innerHTML = '<span style="color:var(--muted)">—</span>';
+      }
+      [td1, td2, td3, td4].forEach(function (td) { tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderBans() {
+    var tb = document.getElementById('tblBans');
+    tb.innerHTML = '';
+    var list = data.bans || [];
+    document.getElementById('bansEmpty').hidden = !!list.length;
+    list.forEach(function (b) {
+      var tr = document.createElement('tr');
+      var td1 = document.createElement('td'); td1.textContent = b.login;
+      var td2 = document.createElement('td'); td2.textContent = b.reason || '—';
+      var td3 = document.createElement('td'); td3.textContent = fmtDate(b.bannedAt);
+      var td4 = document.createElement('td'); td4.textContent = b.until ? fmtDate(b.until) : '永久';
+      var td5 = document.createElement('td'); td5.className = 'act';
+      td5.appendChild(btn('解封', '', function () {
+        post({ action: 'unban', login: b.login }).then(function (r) { handle(r, '已解封'); });
+      }));
+      [td1, td2, td3, td4, td5].forEach(function (td) { tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+  }
+
+  function load() {
+    api('/api/admin').then(function (res) {
+      if (res.status === 401) { document.getElementById('needLogin').hidden = false; return; }
+      if (res.status === 403 || !res.ok) { document.getElementById('noPerm').hidden = false; return; }
+
+      data = res.body;
+      document.getElementById('adminBody').hidden = false;
+      document.getElementById('ownerName').textContent = data.owner || '';
+      document.getElementById('meHint').textContent = '当前身份：@' + data.me.login + (data.me.isOwner ? '（站主）' : '（管理员）');
+
+      var st = data.stats || {};
+      document.getElementById('kPosts').textContent = st.posts || 0;
+      document.getElementById('kDrafts').textContent = st.drafts || 0;
+      document.getElementById('kPinned').textContent = st.pinned || 0;
+      document.getElementById('kComments').textContent = st.comments || 0;
+      document.getElementById('kUsers').textContent = st.users || 0;
+      document.getElementById('kBanned').textContent = st.banned || 0;
+
+      renderPosts(); renderComments(); renderUsers(); renderBans();
+    }).catch(function () { toast('管理台加载失败，请刷新重试', 'err'); });
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', function () { load(); toast('已刷新'); });
+
+  if (window.TeaAuth && window.TeaAuth.onChange) window.TeaAuth.onChange(function () { load(); });
+  else document.addEventListener('tea-auth-ready', function () { load(); });
+})();
+</script>
+</body>
+</html>
