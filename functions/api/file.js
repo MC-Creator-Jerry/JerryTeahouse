@@ -30,11 +30,21 @@ export async function onRequestGet(context) {
 
   const meta = obj.metadata || {};
   const headers = new Headers();
-  headers.set('Content-Type', meta.type || 'application/octet-stream');
+  const ctype = meta.type || 'application/octet-stream';
+  headers.set('Content-Type', ctype);
   headers.set('Cache-Control', 'public, max-age=31536000, immutable');
   headers.set('Accept-Ranges', 'bytes');
   if (meta.name) {
-    headers.set('Content-Disposition', 'inline; filename="' + encodeURIComponent(String(meta.name)) + '"');
+    // 能内联预览的（图片/音视频/PDF/纯文本）走 inline，其余一律 attachment：
+    // 否则 .zip / .exe / .psd 等在浏览器里会被当成乱码或误执行，下载也拿不到原文件名。
+    const inline = /^(image\/|video\/|audio\/|application\/pdf|text\/plain)/i.test(ctype);
+    const enc = encodeURIComponent(String(meta.name));
+    headers.set(
+      'Content-Disposition',
+      (inline ? 'inline' : 'attachment') + '; filename="' + enc + '"; filename*=UTF-8\'\'' + enc
+    );
+    // 未知二进制类型强制下载，避免被浏览器嗅探
+    if (!inline) headers.set('X-Content-Type-Options', 'nosniff');
   }
 
   // 计算内容长度
