@@ -170,7 +170,12 @@
 
   <footer class="site-footer">
     <div>茶馆 · JerryTeahouse —— 慢慢来，比较快。 · <a href="/">主页</a> · <a href="/posts/">帖子中心</a> · <a href="/new/">写帖子</a></div>
+    <div style="margin-top:6px">© <span id="yr"></span> Jerry · 茶馆 · <a href="https://mc-creator-jerry-webpage.pages.dev/">小蓝页（主站）</a></div>
   </footer>
+
+  <script>
+    document.getElementById('yr').textContent = new Date().getFullYear();
+  </script>
 
   <div class="toast" id="toast"></div>
 
