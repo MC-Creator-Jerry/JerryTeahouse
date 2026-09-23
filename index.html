@@ -115,10 +115,38 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  function stripHtml(s) {
+    return String(s == null ? '' : s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  function timeAgo(ts) {
+    var n = Number(ts) || 0;
+    if (!n) return '';
+    var d = Math.floor((Date.now() - n) / 1000);
+    if (d < 60) return '刚刚';
+    if (d < 3600) return Math.floor(d / 60) + ' 分钟前';
+    if (d < 86400) return Math.floor(d / 3600) + ' 小时前';
+    if (d < 86400 * 7) return Math.floor(d / 86400) + ' 天前';
+    try { return new Date(n).toLocaleDateString('zh-CN'); } catch (e) { return ''; }
+  }
+  // 接口帖子（小蓝页同构）-> 主页卡片字段
+  function normalize(p) {
+    if (!p) return p;
+    if (p.excerpt != null) return p;                  // 示例数据原样
+    return {
+      id: p.id,
+      title: p.title || '（无标题）',
+      excerpt: stripHtml(p.body).slice(0, 110),
+      author: p.login || '',
+      when: timeAgo(p.ts),
+      tags: p.topics || [],
+      likes: 0,
+      comments: 0
+    };
+  }
   function cardHtml(p) {
     var tags = (p.tags || []).map(function (t) { return '<span class="tag">#' + escapeHtml(t) + '</span>'; }).join('');
     return '' +
-      '<a class="post-card" href="./post/?id=' + encodeURIComponent(p.id) + '">' +
+      '<a class="post-card" href="/post/?post=' + encodeURIComponent(p.id) + '">' +
         '<h3>' + escapeHtml(p.title) + '</h3>' +
         '<p class="post-excerpt">' + escapeHtml(p.excerpt) + '</p>' +
         '<div class="post-meta">' +
@@ -161,7 +189,7 @@
     fetch('api/post', { credentials: 'same-origin' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
-        var posts = (d && d.posts) || [];
+        var posts = ((d && d.posts) || []).map(normalize);
         if (!posts.length) renderEmpty(); else render(posts);
       })
       .catch(function () { renderEmpty(); });
