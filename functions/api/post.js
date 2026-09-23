@@ -3,7 +3,9 @@
 // GET  ?id=<id>              -> { ...post }                (single; drafts only for author/admin)
 // GET  ?ids=id1,id2          -> { posts:[...] }            (batch; published only, for favorites)
 // GET  ?drafts=1             -> { posts:[...] }            (login required; only requester's drafts)
-// POST {title,body,files?}   -> { ok, post }              (login required; forbidden scan; status=published)
+// GET  ?quota=1              -> { ok, limit, used, plus }  (login required; today's post quota, UTC+8)
+// POST {title,body,files?}   -> { ok, post, daily }        (login required; forbidden scan; status=published)
+//                             daily limit: 10/day; 持「茶馆·发布功能升级」再 +10；管理员不限
 // PATCH {id,title,body,files?,status?} -> { ok, post }    (author/admin; status: draft|published)
 // DELETE ?id=                -> { ok }                     (author or admin only)
 // Storage: KV "posts:list" (array, newest first)
@@ -13,6 +15,7 @@ import { sanitizeHtml, htmlToText } from '../_lib/sanitize.js';
 import { topicsForPost } from '../_lib/topics.js';
 import { rateLimit } from '../_lib/rate.js';
 import { isBanned } from '../_lib/ban.js';
+import { computeDailyLimit, dailyPostCount, incDailyPost, hasTeahousePlus } from '../_lib/dailylimit.js';
 
 const KEY = 'posts:list';
 const MAX = 200;
@@ -42,7 +45,19 @@ export async function onRequestGet(context) {
   const id = url.searchParams.get('id');
   const ids = url.searchParams.get('ids');
   const drafts = url.searchParams.get('drafts');
+  const quota = url.searchParams.get('quota');
   const login = await getLogin(context);
+
+  // 今日发帖额度（写帖页用来显示剩余）
+  if (quota) {
+    if (!login) return json({ error: 'unauthorized' }, 401);
+    const isAdmin = await isAdminLogin(context, login);
+    const plus = await hasTeahousePlus(context, login);
+    const limit = computeDailyLimit(isAdmin, plus);
+    const used = await dailyPostCount(kv, login);
+    return json({ ok: true, limit: limit === Infinity ? null : limit, used, plus: !!plus, unlimited: limit === Infinity });
+  }
+
   const list = await readList(kv);
 
   // 单帖
@@ -87,6 +102,15 @@ export async function onRequestPost(context) {
   const rl = await rateLimit(context.env.TEAHOUSE_KV, 'post', login, { limit: 10, windowSec: 60 });
   if (!rl.ok) return json({ error: 'rate_limited', retryAfter: rl.retryAfter }, 429);
 
+  // 每日发帖上限：普通 10，管理员不限，持「茶馆·发布功能升级」+10
+  const isAdmin = await isAdminLogin(context, login);
+  const plus = await hasTeahousePlus(context, login);
+  const dailyLimit = computeDailyLimit(isAdmin, plus);
+  const usedToday = dailyLimit === Infinity ? 0 : await dailyPostCount(context.env.TEAHOUSE_KV, login);
+  if (dailyLimit !== Infinity && usedToday >= dailyLimit) {
+    return json({ error: 'daily_limit', limit: dailyLimit, used: usedToday, plus: !!plus }, 429);
+  }
+
   const body = await context.request.json().catch(() => ({}));
   const title = String(body.title || '').slice(0, 200);
   const raw = String(body.body || '').slice(0, BODY_MAX);
@@ -124,7 +148,12 @@ export async function onRequestPost(context) {
   list.unshift(post);
   if (list.length > MAX) list.length = MAX;
   await kv.put(KEY, JSON.stringify(list));
-  return json({ ok: true, post: { id: post.id, status: post.status } });
+  const usedAfter = dailyLimit === Infinity ? 0 : await incDailyPost(kv, login);
+  return json({
+    ok: true,
+    post: { id: post.id, status: post.status },
+    daily: { limit: dailyLimit === Infinity ? null : dailyLimit, used: usedAfter, plus: !!plus },
+  });
 }
 
 export async function onRequestPatch(context) {
